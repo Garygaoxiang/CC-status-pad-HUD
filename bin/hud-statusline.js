@@ -25,9 +25,10 @@ req.end(input);
 
 // 2) 调用原始 claude-hud statusline，喂同样的 JSON，透传 stdout
 try {
+  // original-statusline.txt 为本地生成（见安装步骤），不纳入版本控制
   const orig = readFileSync(join(here, 'original-statusline.txt'), 'utf8').trim();
   if (orig) {
-    const r = spawnSync(toWinPaths(orig), { shell: true, input, encoding: 'utf8' });
+    const r = spawnSync(toWinPaths(orig), { shell: true, input, encoding: 'utf8', timeout: 5000 });
     process.stdout.write(r.stdout || '');
   }
 } catch { /* 无原始命令则输出空状态栏 */ }

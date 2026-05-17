@@ -2,3 +2,4 @@
 node_modules/
 *.log
 .usage-cache.json
+bin/original-statusline.txt
