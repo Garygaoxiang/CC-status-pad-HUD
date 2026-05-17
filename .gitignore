@@ -1,0 +1,4 @@
+.superpowers/
+node_modules/
+*.log
+.usage-cache.json
