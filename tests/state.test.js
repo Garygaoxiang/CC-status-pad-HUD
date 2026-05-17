@@ -60,4 +60,9 @@ test('applyEvent 不修改入参', () => {
   const s0 = createSession('abc');
   applyEvent(s0, { hook_event_name: 'Stop' }, 1);
   assert.equal(s0.status, 'idle');
+  // 嵌套结构同样不能被改动
+  applyEvent(s0, { hook_event_name: 'PostToolUse', tool_name: 'Edit',
+    tool_input: { file_path: 'x.ts' } }, 1);
+  assert.deepEqual(s0.timeline, []);
+  assert.deepEqual(s0.toolCounts, {});
 });

@@ -30,16 +30,24 @@ export function formatTool(name = 'Tool', input = {}) {
   }
 }
 
-function applyTaskTool(s, name, input = {}, response = '') {
+function applyTaskTool(tasks, name, input = {}, response = '') {
   if (name === 'TaskCreate') {
     const m = String(response || '').match(/#(\d+)/);
-    const id = m ? m[1] : String(s.tasks.length + 1);
-    s.tasks.push({ id, subject: input.subject || '(task)', status: 'pending' });
-  } else if (name === 'TaskUpdate') {
-    const t = s.tasks.find((x) => x.id === String(input.taskId ?? ''));
-    if (t && input.status) t.status = input.status;
-    if (t && input.subject) t.subject = input.subject;
+    const id = m ? m[1] : String(tasks.length + 1);
+    return [...tasks, { id, subject: input.subject || '(task)', status: 'pending' }];
   }
+  if (name === 'TaskUpdate') {
+    return tasks.map((t) =>
+      t.id === String(input.taskId ?? '')
+        ? {
+            ...t,
+            ...(input.status ? { status: input.status } : {}),
+            ...(input.subject ? { subject: input.subject } : {}),
+          }
+        : t,
+    );
+  }
+  return tasks;
 }
 
 export function applyEvent(session, event, now = Date.now()) {
@@ -52,7 +60,8 @@ export function applyEvent(session, event, now = Date.now()) {
   };
   if (event.cwd) { s.cwd = event.cwd; s.projectName = basename(event.cwd); }
   switch (event.hook_event_name) {
-    case 'UserPromptSubmit': s.status = 'working'; s.currentTool = null; break;
+    case 'UserPromptSubmit': // 用户 prompt 不是工具调用，不写入时间线
+      s.status = 'working'; s.currentTool = null; break;
     case 'PreToolUse':
       s.status = 'running';
       s.currentTool = formatTool(event.tool_name, event.tool_input);
@@ -64,7 +73,7 @@ export function applyEvent(session, event, now = Date.now()) {
       s.timeline.push({ ts: now, tool: name, label: formatTool(name, event.tool_input) });
       if (s.timeline.length > MAX_TIMELINE) s.timeline = s.timeline.slice(-MAX_TIMELINE);
       if (name === 'TaskCreate' || name === 'TaskUpdate')
-        applyTaskTool(s, name, event.tool_input, event.tool_response);
+        s.tasks = applyTaskTool(s.tasks, name, event.tool_input, event.tool_response);
       break;
     }
     case 'Notification': s.status = 'waiting'; break;
