@@ -34,6 +34,7 @@ export function createCollector() {
     let b = '';
     req.on('data', (c) => (b += c));
     req.on('end', () => resolve(b));
+    req.on('error', () => resolve(b));
   });
 
   const server = http.createServer(async (req, res) => {
@@ -94,7 +95,7 @@ export function createCollector() {
     if (timer) clearInterval(timer);
     for (const res of clients) res.end();
     clients.clear();
-    server.close();
+    return new Promise((resolve) => server.close(resolve));
   }
   return { server, start, stop, snapshot };
 }

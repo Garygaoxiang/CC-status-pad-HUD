@@ -19,7 +19,7 @@ test('POST /hook 归约状态，GET /state 可读', async () => {
   const state = await (await fetch(`http://localhost:${port}/state`)).json();
   assert.equal(state.focusId, 's1');
   assert.equal(state.sessions[0].currentTool, 'Bash · ls');
-  c.stop();
+  await c.stop();
 });
 
 test('坏 JSON 不致服务出错，仍返回 204', async () => {
@@ -28,14 +28,16 @@ test('坏 JSON 不致服务出错，仍返回 204', async () => {
   const res = await fetch(`http://localhost:${port}/hook`,
     { method: 'POST', body: '不是json' });
   assert.equal(res.status, 204);
-  c.stop();
+  await c.stop();
 });
 
 test('GET /events 立即推送一份 SSE 快照', async () => {
   const c = createCollector();
   const port = await listen(c);
   const res = await fetch(`http://localhost:${port}/events`);
-  const { value } = await res.body.getReader().read();
+  const reader = res.body.getReader();
+  const { value } = await reader.read();
   assert.match(new TextDecoder().decode(value), /^data: /);
-  c.stop();
+  await reader.cancel();
+  await c.stop();
 });
