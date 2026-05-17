@@ -1,11 +1,20 @@
 import http from 'node:http';
-import { pathToFileURL } from 'node:url';
+import { readFile } from 'node:fs/promises';
+import { extname, join, normalize } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   applyEvent, applyStatusline, createSession, pickFocus, pruneStale,
 } from './state.js';
 import { readToken, fetchUsage } from './usage.js';
 
 const DEFAULT_PORT = Number(process.env.HUD_PORT) || 4317;
+
+const PUBLIC_DIR = fileURLToPath(new URL('../public/', import.meta.url));
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+};
 
 export function createCollector() {
   const sessions = new Map();
@@ -71,6 +80,20 @@ export function createCollector() {
       clients.add(res);
       req.on('close', () => clients.delete(res));
       return;
+    }
+    if (req.method === 'GET') {
+      let rel;
+      try { rel = decodeURIComponent(url.pathname); }
+      catch { return res.writeHead(400).end(); }
+      const filePath = normalize(join(PUBLIC_DIR, '.' + (rel === '/' ? '/index.html' : rel)));
+      if (!filePath.startsWith(PUBLIC_DIR)) return res.writeHead(403).end();
+      try {
+        const buf = await readFile(filePath);
+        res.writeHead(200, { 'Content-Type': MIME[extname(filePath)] || 'application/octet-stream' });
+        return res.end(buf);
+      } catch {
+        return res.writeHead(404).end();
+      }
     }
     res.writeHead(404).end();
   });
