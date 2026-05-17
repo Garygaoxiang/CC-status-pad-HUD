@@ -66,3 +66,37 @@ test('applyEvent 不修改入参', () => {
   assert.deepEqual(s0.timeline, []);
   assert.deepEqual(s0.toolCounts, {});
 });
+
+import { applyStatusline, pickFocus, pruneStale, STALE_MS } from '../src/state.js';
+
+test('applyStatusline 归并模型与花费', () => {
+  let s = createSession('abc');
+  s = applyStatusline(s, {
+    model: { display_name: 'Opus 4.7' },
+    workspace: { current_dir: 'C:/proj/api' },
+    cost: { total_cost_usd: 0.84, total_lines_added: 128, total_lines_removed: 34 },
+  }, 5000);
+  assert.equal(s.model, 'Opus 4.7');
+  assert.equal(s.projectName, 'api');
+  assert.equal(s.costUsd, 0.84);
+  assert.equal(s.linesAdded, 128);
+});
+
+test('pickFocus 取 lastSeen 最新的会话', () => {
+  const m = new Map([
+    ['a', { ...createSession('a'), lastSeen: 100 }],
+    ['b', { ...createSession('b'), lastSeen: 300 }],
+  ]);
+  assert.equal(pickFocus(m).sessionId, 'b');
+});
+
+test('pruneStale 移除过期与已结束会话', () => {
+  const now = 1_000_000;
+  const m = new Map([
+    ['fresh', { ...createSession('fresh'), lastSeen: now }],
+    ['stale', { ...createSession('stale'), lastSeen: now - STALE_MS - 1 }],
+    ['ended', { ...createSession('ended'), status: 'ended', lastSeen: now }],
+  ]);
+  pruneStale(m, now);
+  assert.deepEqual([...m.keys()], ['fresh']);
+});

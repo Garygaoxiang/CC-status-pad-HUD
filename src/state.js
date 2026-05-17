@@ -82,3 +82,30 @@ export function applyEvent(session, event, now = Date.now()) {
   }
   return s;
 }
+
+export function applyStatusline(session, sl, now = Date.now()) {
+  const s = { ...session, lastSeen: now };
+  if (sl.model?.display_name) s.model = sl.model.display_name;
+  if (sl.workspace?.current_dir) {
+    s.cwd = sl.workspace.current_dir;
+    s.projectName = basename(s.cwd);
+  }
+  const c = sl.cost || {};
+  if (c.total_cost_usd != null) s.costUsd = c.total_cost_usd;
+  if (c.total_duration_ms != null) s.durationMs = c.total_duration_ms;
+  if (c.total_lines_added != null) s.linesAdded = c.total_lines_added;
+  if (c.total_lines_removed != null) s.linesRemoved = c.total_lines_removed;
+  return s;
+}
+
+export function pruneStale(sessions, now = Date.now()) {
+  for (const [id, s] of sessions)
+    if (s.status === 'ended' || now - s.lastSeen > STALE_MS) sessions.delete(id);
+}
+
+export function pickFocus(sessions) {
+  let focus = null;
+  for (const s of sessions.values())
+    if (!focus || s.lastSeen > focus.lastSeen) focus = s;
+  return focus;
+}
