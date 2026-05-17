@@ -9,6 +9,11 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const input = readFileSync(0, 'utf8');          // fd 0 = stdin
 
+// 把 MSYS 风格盘符前缀 /c/ 转成 Windows 形式 C:/（cmd.exe 可识别）
+function toWinPaths(cmd) {
+  return String(cmd).replace(/(^|[\s"'])\/([a-zA-Z])\//g, (_, pre, d) => `${pre}${d.toUpperCase()}:/`);
+}
+
 // 1) 转发给采集器（失败静默，不阻断状态栏）
 const req = http.request(
   { host: 'localhost', port: 4317, path: '/statusline', method: 'POST', timeout: 800 },
@@ -22,7 +27,7 @@ req.end(input);
 try {
   const orig = readFileSync(join(here, 'original-statusline.txt'), 'utf8').trim();
   if (orig) {
-    const r = spawnSync(orig, { shell: true, input, encoding: 'utf8' });
+    const r = spawnSync(toWinPaths(orig), { shell: true, input, encoding: 'utf8' });
     process.stdout.write(r.stdout || '');
   }
 } catch { /* 无原始命令则输出空状态栏 */ }
