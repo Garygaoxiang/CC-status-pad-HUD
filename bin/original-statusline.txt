@@ -1,0 +1,1 @@
+"/c/Users/GaryPC/.bun/bin/bun" "/c/Users/GaryPC/.claude/plugins/cache/claude-hud/claude-hud/0.0.10/dist/index.js"
