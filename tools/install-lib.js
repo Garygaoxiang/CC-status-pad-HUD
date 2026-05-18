@@ -5,10 +5,10 @@
 // 策略：精确匹配目标宽高 → 回退首个非主屏 → null。
 export function pickScreen(screens, target = {}) {
   const list = Array.isArray(screens) ? screens : [];
-  const exact = list.find(
+  const hit = list.find(
     (s) => !s.primary && s.width === target.width && s.height === target.height,
   );
-  if (exact) return { ...exact, exact: true };
+  if (hit) return { ...hit, exact: true };
   const fallback = list.find((s) => !s.primary);
   return fallback ? { ...fallback, exact: false } : null;
 }

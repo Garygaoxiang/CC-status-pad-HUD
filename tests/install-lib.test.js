@@ -8,6 +8,8 @@ test('pickScreen 精确匹配目标分辨率优先', () => {
   const screens = [S(0, 0, 3440, 1440, true), S(3440, 0, 1920, 480)];
   const r = pickScreen(screens, { width: 1920, height: 480 });
   assert.equal(r.x, 3440);
+  assert.equal(r.width, 1920);
+  assert.equal(r.height, 480);
   assert.equal(r.exact, true);
 });
 
