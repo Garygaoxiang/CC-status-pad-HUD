@@ -82,13 +82,17 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href &
       const r = pickScreen(scr, { width: w, height: h });
       if (r) process.stdout.write(JSON.stringify(r));
     } else if (cmd === 'merge-settings') {
-      const out = mergeSettings(JSON.parse(raw || '{}'),
-        { hookCmd: arg('--hook'), statuslineCmd: arg('--statusline') });
+      let settings;
+      try { settings = JSON.parse(raw || '{}'); }
+      catch { process.stderr.write('merge-settings: 无法解析 stdin JSON\n'); process.exit(1); }
+      const out = mergeSettings(settings, { hookCmd: arg('--hook'), statuslineCmd: arg('--statusline') });
       process.stdout.write(JSON.stringify(out));
     } else if (cmd === 'restore-settings') {
+      let settings;
+      try { settings = JSON.parse(raw || '{}'); }
+      catch { process.stderr.write('restore-settings: 无法解析 stdin JSON\n'); process.exit(1); }
       // 原始命令含空格/引号，走环境变量规避 PS 5.1 原生调用的引号转义坑。
-      const out = restoreSettings(JSON.parse(raw || '{}'),
-        { savedStatusline: process.env.HUD_SAVED_SL || '' });
+      const out = restoreSettings(settings, { savedStatusline: process.env.HUD_SAVED_SL || '' });
       process.stdout.write(JSON.stringify(out));
     }
   });

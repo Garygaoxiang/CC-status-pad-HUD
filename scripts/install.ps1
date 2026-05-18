@@ -8,14 +8,21 @@ $hookCmd = Join-Path $root 'bin\hud-hook.cmd'
 $slCmd = Join-Path $root 'bin\hud-statusline.cmd'
 $utf8 = New-Object System.Text.UTF8Encoding($false)   # $false = 无 BOM
 
-# 1) 读取并整份备份 settings.json。
-$raw = Get-Content $settingsPath -Raw
+# 1) 读取并整份备份 settings.json（文件不存在时按空配置处理、不备份）。
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-[System.IO.File]::WriteAllText((Join-Path $claudeDir "settings.backup-$stamp.json"), $raw, $utf8)
+if (Test-Path $settingsPath) {
+  $raw = Get-Content $settingsPath -Raw
+  [System.IO.File]::WriteAllText((Join-Path $claudeDir "settings.backup-$stamp.json"), $raw, $utf8)
+} else {
+  $raw = '{}'
+}
 
 # 2) 调 install-lib 合并 hook/statusline。
 $result = ($raw | & node "$root\tools\install-lib.js" merge-settings `
   --hook $hookCmd --statusline $slCmd) | ConvertFrom-Json
+if (-not $result -or -not $result.nextSettings) {
+  throw "merge-settings 返回无效数据，安装中止（settings.json 未修改）"
+}
 
 # 3) 保存原始 statusline 命令（savedStatusline 为空表示已安装过，不覆盖）。
 if ($result.savedStatusline) {
