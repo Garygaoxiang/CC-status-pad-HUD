@@ -23,6 +23,11 @@ const HUD_EVENTS = [
 // 深拷贝工具（仅用于纯 JSON 可序列化对象）。
 const clone = (o) => structuredClone(o || {});
 
+// 把命令里的 Windows 反斜杠规范化为正斜杠。
+// Claude Code 经 Git Bash 执行 hook/statusline，反斜杠会被当转义符吃掉
+// （H:\turzx → H:turzx → command not found），故写入 settings 前统一转正斜杠。
+const toPosix = (cmd) => String(cmd || '').replace(/\\/g, '/');
+
 // 判断某 hook group 是否由 HUD 注入（命令含 hud-hook.cmd，路径大小写不敏感）。
 const isHudGroup = (g) => (g?.hooks || []).some((h) => /hud-hook\.cmd/i.test(h?.command || ''));
 
@@ -31,17 +36,20 @@ const isHudGroup = (g) => (g?.hooks || []).some((h) => /hud-hook\.cmd/i.test(h?.
 // savedStatusline：当前 statusLine 不是 HUD 时保存原始命令；已是 HUD 时返回 null。
 export function mergeSettings(settings, { hookCmd, statuslineCmd }) {
   const next = clone(settings);
+  // 安装器 Join-Path 产出 Windows 反斜杠路径，写入 settings 前规范化为正斜杠。
+  const hook = toPosix(hookCmd);
+  const statusline = toPosix(statuslineCmd);
   next.hooks = next.hooks || {};
   for (const ev of HUD_EVENTS) {
     // 先过滤掉已有的 HUD group（去重），再追加新的，保证幂等。
     const groups = (next.hooks[ev] || []).filter((g) => !isHudGroup(g));
-    groups.push({ hooks: [{ type: 'command', command: hookCmd }] });
+    groups.push({ hooks: [{ type: 'command', command: hook }] });
     next.hooks[ev] = groups;
   }
   // 若当前 statusLine 已是 HUD 包装器，则 savedStatusline 为 null（不污染已存储的原始命令）。
   const curr = settings?.statusLine?.command || '';
   const savedStatusline = /hud-statusline/i.test(curr) ? null : curr || null;
-  next.statusLine = { type: 'command', command: statuslineCmd };
+  next.statusLine = { type: 'command', command: statusline };
   return { nextSettings: next, savedStatusline };
 }
 

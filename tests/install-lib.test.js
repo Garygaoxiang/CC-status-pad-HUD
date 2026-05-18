@@ -32,8 +32,10 @@ test('pickScreen 空列表返回 null', () => {
 
 import { mergeSettings, restoreSettings } from '../tools/install-lib.js';
 
-const HOOK = 'H:\\turzx\\turzx-coding-hud\\bin\\hud-hook.cmd';
-const SL = 'H:\\turzx\\turzx-coding-hud\\bin\\hud-statusline.cmd';
+// 期望写入 settings 的形式：正斜杠。Claude Code 经 Git Bash 跑 hook，
+// 反斜杠会被当转义吃掉，故 mergeSettings 规范化为正斜杠（见末尾回归测试）。
+const HOOK = 'H:/turzx/turzx-coding-hud/bin/hud-hook.cmd';
+const SL = 'H:/turzx/turzx-coding-hud/bin/hud-statusline.cmd';
 const EVENTS = ['UserPromptSubmit','PreToolUse','PostToolUse','Notification','Stop','SessionEnd'];
 const hasHud = (groups) => (groups || []).some((g) => g.hooks.some((h) => h.command === HOOK));
 
@@ -79,4 +81,23 @@ test('restoreSettings 原本无 statusLine 时卸载后移除 HUD statusLine', (
   const s = mergeSettings({ hooks: {} }, { hookCmd: HOOK, statuslineCmd: SL }).nextSettings;
   const restored = restoreSettings(s, { savedStatusline: '' });
   assert.equal(restored.statusLine, undefined);
+});
+
+// 回归：安装器 Join-Path 产出的是 Windows 反斜杠路径，但 Claude Code 经
+// Git Bash 执行 hook，反斜杠会被当转义符吞掉（H:\turzx → H:turzx）。
+// mergeSettings 必须把命令规范化为正斜杠，settings.json 里不得出现反斜杠。
+test('mergeSettings 把反斜杠路径规范化为正斜杠（防 Git Bash 转义吃路径）', () => {
+  const winHook = 'H:\\turzx\\turzx-coding-hud\\bin\\hud-hook.cmd';
+  const winSL = 'H:\\turzx\\turzx-coding-hud\\bin\\hud-statusline.cmd';
+  const { nextSettings } = mergeSettings({ hooks: {} }, { hookCmd: winHook, statuslineCmd: winSL });
+  for (const ev of EVENTS) {
+    for (const g of nextSettings.hooks[ev]) {
+      for (const h of g.hooks) {
+        assert.ok(!h.command.includes('\\'), `${ev} hook 命令不应含反斜杠：${h.command}`);
+      }
+    }
+  }
+  assert.ok(!nextSettings.statusLine.command.includes('\\'), 'statusLine 命令不应含反斜杠');
+  assert.equal(nextSettings.hooks.Stop[0].hooks[0].command, HOOK);
+  assert.equal(nextSettings.statusLine.command, SL);
 });
