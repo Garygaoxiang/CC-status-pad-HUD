@@ -54,6 +54,8 @@ export function restoreSettings(settings, { savedStatusline }) {
     if (groups.length) next.hooks[ev] = groups;
     else delete next.hooks[ev];
   }
+  // savedStatusline 有值则还原；为空说明用户原本无 statusLine，卸载后也应移除。
   if (savedStatusline) next.statusLine = { type: 'command', command: savedStatusline };
+  else delete next.statusLine;
   return next;
 }

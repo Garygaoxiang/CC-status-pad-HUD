@@ -68,9 +68,15 @@ test('restoreSettings 移除 HUD hook 并还原 statusLine，不改入参', () =
     statusLine: { command: 'orig' } };
   s = mergeSettings(s, { hookCmd: HOOK, statuslineCmd: SL }).nextSettings;
   const before = JSON.stringify(s);
-  const restored = restoreSettings(s, { hookCmd: HOOK, savedStatusline: 'orig' });
+  const restored = restoreSettings(s, { savedStatusline: 'orig' });
   for (const ev of Object.keys(restored.hooks)) assert.ok(!hasHud(restored.hooks[ev]));
   assert.ok(restored.hooks.PreToolUse.some((g) => g.hooks.some((h) => h.command === 'node gsd.js')));
   assert.equal(restored.statusLine.command, 'orig');
   assert.equal(JSON.stringify(s), before);   // 入参未被修改
+});
+
+test('restoreSettings 原本无 statusLine 时卸载后移除 HUD statusLine', () => {
+  const s = mergeSettings({ hooks: {} }, { hookCmd: HOOK, statuslineCmd: SL }).nextSettings;
+  const restored = restoreSettings(s, { savedStatusline: '' });
+  assert.equal(restored.statusLine, undefined);
 });
