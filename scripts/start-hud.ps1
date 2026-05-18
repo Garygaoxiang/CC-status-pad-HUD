@@ -35,6 +35,9 @@ if ($screen) {
   $a = "--app=$url"
   Write-Host "未检测到副屏，HUD 在主屏窗口打开；接好 TURZX 副屏后重跑本脚本。"
 }
+# HUD 专用浏览器 profile：与日常浏览器隔离，避免继承用户对本站点的页面缩放（曾导致 67% 缩放未铺满副屏）。
+$hudProfile = Join-Path $env:LOCALAPPDATA 'turzx-coding-hud\chrome-profile'
+$a = "$a --user-data-dir=`"$hudProfile`" --no-first-run --no-default-browser-check"
 $chrome = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 $edge = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
 # 选浏览器：config 指定 edge 且 Edge 在 -> Edge；否则 Chrome；再否则 Edge；都没有 -> $null。
