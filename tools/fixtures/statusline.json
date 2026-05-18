@@ -1,0 +1,18 @@
+{
+  "hook_event_name": "Status",
+  "session_id": "fixture-session-001",
+  "transcript_path": "C:\\Users\\demo\\.claude\\projects\\demo\\transcript.jsonl",
+  "cwd": "H:\\proj\\demo-api",
+  "model": { "id": "claude-opus-4-7", "display_name": "Opus 4.7" },
+  "workspace": { "current_dir": "H:\\proj\\demo-api", "project_dir": "H:\\proj\\demo-api" },
+  "version": "2.1.0",
+  "output_style": { "name": "default" },
+  "cost": {
+    "total_cost_usd": 0.84,
+    "total_duration_ms": 1391000,
+    "total_api_duration_ms": 423000,
+    "total_lines_added": 128,
+    "total_lines_removed": 34
+  },
+  "exceeds_200k_tokens": false
+}

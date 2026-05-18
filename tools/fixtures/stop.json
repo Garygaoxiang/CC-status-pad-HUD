@@ -1,0 +1,7 @@
+{
+  "session_id": "fixture-session-001",
+  "transcript_path": "C:\\Users\\demo\\.claude\\projects\\demo\\transcript.jsonl",
+  "cwd": "H:\\proj\\demo-api",
+  "hook_event_name": "Stop",
+  "stop_hook_active": false
+}

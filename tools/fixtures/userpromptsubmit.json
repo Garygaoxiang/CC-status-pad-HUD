@@ -1,0 +1,7 @@
+{
+  "session_id": "fixture-session-001",
+  "transcript_path": "C:\\Users\\demo\\.claude\\projects\\demo\\transcript.jsonl",
+  "cwd": "H:\\proj\\demo-api",
+  "hook_event_name": "UserPromptSubmit",
+  "prompt": "把测试补全到 80% 覆盖率"
+}

@@ -1,0 +1,9 @@
+{
+  "session_id": "fixture-session-001",
+  "transcript_path": "C:\\Users\\demo\\.claude\\projects\\demo\\transcript.jsonl",
+  "cwd": "H:\\proj\\demo-api",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "TaskCreate",
+  "tool_input": { "subject": "建采集器", "description": "实现 HTTP 采集器" },
+  "tool_response": "Task #1 created successfully: 建采集器"
+}

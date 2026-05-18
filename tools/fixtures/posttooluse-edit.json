@@ -1,0 +1,9 @@
+{
+  "session_id": "fixture-session-001",
+  "transcript_path": "C:\\Users\\demo\\.claude\\projects\\demo\\transcript.jsonl",
+  "cwd": "H:\\proj\\demo-api",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Edit",
+  "tool_input": { "file_path": "H:\\proj\\demo-api\\src\\components\\App.tsx", "old_string": "const a = 1;", "new_string": "const a = 2;" },
+  "tool_response": { "filePath": "H:\\proj\\demo-api\\src\\components\\App.tsx", "success": true }
+}

@@ -1,0 +1,9 @@
+{
+  "session_id": "fixture-session-001",
+  "transcript_path": "C:\\Users\\demo\\.claude\\projects\\demo\\transcript.jsonl",
+  "cwd": "H:\\proj\\demo-api",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "TaskUpdate",
+  "tool_input": { "taskId": "1", "status": "completed" },
+  "tool_response": "Updated task #1 status"
+}

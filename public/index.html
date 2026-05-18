@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1920, initial-scale=1">
+  <title>Claude Code HUD</title>
+  <link rel="stylesheet" href="hud.css">
+</head>
+<body>
+  <div class="hud" id="hud">
+    <div class="grid"></div>
+    <div class="cnr c1"></div><div class="cnr c2"></div>
+    <div class="cnr c3"></div><div class="cnr c4"></div>
+
+    <div class="pnl banner" id="banner"></div>
+
+    <div class="cols">
+      <div class="pnl col-tl">
+        <div class="lbl">活动时间线 · LIVE</div>
+        <div class="tl mono" id="timeline"></div>
+      </div>
+      <div class="pnl col-mid">
+        <div id="tasks"></div>
+        <div id="toolcounts"></div>
+        <div id="changes"></div>
+      </div>
+      <div class="pnl col-usage" id="usage"></div>
+    </div>
+
+    <div class="pnl footer mono" id="footer"></div>
+  </div>
+  <div class="alert" id="alert"></div>
+  <script type="module" src="hud.js"></script>
+</body>
+</html>

@@ -98,16 +98,20 @@ Windows 批处理。被 Claude Code hooks 调用，把事件 JSON（stdin）`cur
 visual-final 视觉方案的实现。WebSocket 客户端，收到状态即重绘；断线自动重连。
 负责「等待授权」强提醒态的整屏视觉切换。
 
-### 4.6 启动器 — `start-hud.ps1`
+### 4.6 启动器 — `start-hud.ps1` ✅ 已实现
 (1) 检查服务是否在跑，没有则起；(2) 用
 `[System.Windows.Forms.Screen]::AllScreens` 检测 1920×480 的副屏并取其坐标；
 (3) 用浏览器（优先 Chrome、回退 Edge）
 `--app=http://localhost:4317 --kiosk --window-position=X,Y` 打开。
-注册到 Windows 启动项实现开机自启。检测不到副屏时给提示、不崩溃。
+开机自启采用**启动文件夹**方案（`shell:startup` 放隐藏窗口启动器 .cmd，无需管理员权限）。
+检测不到副屏时给提示、不崩溃。
 
-### 4.7 安装器 — `install.ps1`
-把 hook、statusline 配置写入 `~/.claude/settings.json`（先备份现有
-`statusLine.command`），配置开机自启。提供卸载能力。
+### 4.7 安装器 — `install.ps1` / `uninstall.ps1` ✅ 已实现
+`install.ps1`：把 hook、statusline 配置写入 `~/.claude/settings.json`（先备份现有
+`statusLine.command`），把启动器注册到 Windows 启动文件夹实现开机自启。
+`uninstall.ps1`：还原 settings.json、移除启动文件夹启动项。
+安装/卸载逻辑由 `tools/install-lib.js` 的纯函数（`mergeSettings`/`restoreSettings`）承载，
+可独立单元测试。
 
 ### 4.8 回放工具 — `replay.js`（开发用）
 回放录制好的 hook 事件序列到采集器，不开真会话也能开发/联调 HUD。
@@ -198,7 +202,13 @@ visual-final 视觉方案的实现。WebSocket 客户端，收到状态即重绘
 
 1. **Chrome/Edge kiosk 定位到指定副屏**：`--window-position` + `--kiosk` 在
    多显示器下的实际行为需实测，可能要配合窗口尺寸/全屏切换。
+   **实测结论（2026-05-18）**：Chrome `--app --kiosk --window-position=X,Y --window-size=W,H`
+   可正确定位到副屏指定坐标，启动器已采用此方案。
+
 2. **副屏坐标检测**：`Screen.AllScreens` 取虚拟桌面坐标的可靠性需验证。
+   **实测结论（2026-05-18）**：`[System.Windows.Forms.Screen]::AllScreens` 可取到多屏
+   虚拟桌面坐标（本机：主屏 0,0·3440×1440；副屏 3440,0·1280×800），可靠可用。
+
 3. **hooks 在 Windows 上的调用 shell**：确认 `.cmd` 转发器被正确调用且
    `exit /b 0` 能阻断非零退出码影响 PreToolUse。
 4. **statusline 包装**：确认 claude-hud 的 statusline 命令可被外部脚本以同样
