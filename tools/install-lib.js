@@ -1,5 +1,6 @@
 // HUD 安装/启动期纯逻辑。所有导出函数无副作用、返回新对象。
 // 同时作为 CLI 被 PowerShell 脚本调用（见文件末尾 CLI 入口，Task 3 补充）。
+import { pathToFileURL } from 'node:url';
 
 // 从屏幕列表中选出 HUD 该铺的副屏。
 // 策略：精确匹配目标宽高 → 回退首个非主屏 → null。
@@ -58,4 +59,21 @@ export function restoreSettings(settings, { savedStatusline }) {
   if (savedStatusline) next.statusLine = { type: 'command', command: savedStatusline };
   else delete next.statusLine;
   return next;
+}
+
+// CLI 入口：被 start-hud.ps1 调用。`pick-screen --target WxH`
+// 从 stdin 读屏幕列表 JSON，把选中的副屏写 stdout（无匹配则空输出、退出码 0）。
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+    && process.argv[2] === 'pick-screen') {
+  const ti = process.argv.indexOf('--target');
+  const [w, h] = (ti >= 0 ? process.argv[ti + 1] : '1920x480').split('x').map(Number);
+  let raw = '';
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', (c) => (raw += c));
+  process.stdin.on('end', () => {
+    let screens = [];
+    try { const j = JSON.parse(raw.replace(/^﻿/, '')); screens = Array.isArray(j) ? j : [j]; } catch {}
+    const r = pickScreen(screens, { width: w, height: h });
+    if (r) process.stdout.write(JSON.stringify(r));
+  });
 }
