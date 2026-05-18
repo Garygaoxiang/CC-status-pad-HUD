@@ -72,6 +72,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
   process.stdin.on('data', (c) => (raw += c));
   process.stdin.on('end', () => {
     let screens = [];
+    // 解析失败时 screens 保持 []，pickScreen 返回 null，CLI 空输出降级到主屏。
     try { const j = JSON.parse(raw.replace(/^﻿/, '')); screens = Array.isArray(j) ? j : [j]; } catch {}
     const r = pickScreen(screens, { width: w, height: h });
     if (r) process.stdout.write(JSON.stringify(r));

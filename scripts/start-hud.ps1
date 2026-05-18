@@ -3,6 +3,7 @@
 $ErrorActionPreference = 'Continue'
 $root = Split-Path -Parent $PSScriptRoot
 $config = Get-Content (Join-Path $PSScriptRoot 'hud-config.json') -Raw | ConvertFrom-Json
+if (-not $config) { Write-Host "缺少配置文件：$PSScriptRoot\hud-config.json，请先运行安装脚本。"; return }
 $port = $config.port
 
 # 1) 采集器：没监听就后台隐藏窗口拉起，轮询最多 5s 等就绪。
@@ -11,6 +12,9 @@ if (-not (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction Silen
   for ($i = 0; $i -lt 20; $i++) {
     Start-Sleep -Milliseconds 250
     if (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue) { break }
+  }
+  if (-not (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)) {
+    Write-Host "警告：采集器在 5s 内未就绪（端口 $port），HUD 页面可能显示空白。"
   }
 }
 
@@ -33,6 +37,15 @@ if ($screen) {
 }
 $chrome = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 $edge = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
-$browser = if ($config.browser -eq 'edge' -and (Test-Path $edge)) { $edge } elseif ($chrome) { $chrome } elseif (Test-Path $edge) { $edge } else { $null }
+# 选浏览器：config 指定 edge 且 Edge 在 -> Edge；否则 Chrome；再否则 Edge；都没有 -> $null。
+if ($config.browser -eq 'edge' -and (Test-Path $edge)) {
+  $browser = $edge
+} elseif ($chrome) {
+  $browser = $chrome
+} elseif (Test-Path $edge) {
+  $browser = $edge
+} else {
+  $browser = $null
+}
 if ($browser) { Start-Process -FilePath $browser -ArgumentList $a }
 else { Write-Host "未找到 Chrome/Edge，无法打开 HUD 窗口。" }
