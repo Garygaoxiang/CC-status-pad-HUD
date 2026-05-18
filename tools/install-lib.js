@@ -61,20 +61,35 @@ export function restoreSettings(settings, { savedStatusline }) {
   return next;
 }
 
-// CLI 入口：被 start-hud.ps1 调用。`pick-screen --target WxH`
-// 从 stdin 读屏幕列表 JSON，把选中的副屏写 stdout（无匹配则空输出、退出码 0）。
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
-    && process.argv[2] === 'pick-screen') {
-  const ti = process.argv.indexOf('--target');
-  const [w, h] = (ti >= 0 ? process.argv[ti + 1] : '1920x480').split('x').map(Number);
+// CLI 入口：被 start-hud / install / uninstall 脚本调用。
+// 统一约定：stdin 收 JSON、stdout 出 JSON。子命令：
+//   pick-screen --target WxH                  选副屏
+//   merge-settings --hook P --statusline P    安装期合并
+//   restore-settings   (原始 statusline 命令经环境变量 HUD_SAVED_SL 传入)
+const cmd = process.argv[2];
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href && cmd) {
+  const arg = (n, d) => { const i = process.argv.indexOf(n); return i >= 0 ? process.argv[i + 1] : d; };
   let raw = '';
   process.stdin.setEncoding('utf8');
   process.stdin.on('data', (c) => (raw += c));
   process.stdin.on('end', () => {
-    let screens = [];
-    // 解析失败时 screens 保持 []，pickScreen 返回 null，CLI 空输出降级到主屏。
-    try { const j = JSON.parse(raw.replace(/^﻿/, '')); screens = Array.isArray(j) ? j : [j]; } catch {}
-    const r = pickScreen(screens, { width: w, height: h });
-    if (r) process.stdout.write(JSON.stringify(r));
+    raw = raw.replace(/^﻿/, '');   // PowerShell 管道会附 UTF-8 BOM，先剥除
+    if (cmd === 'pick-screen') {
+      const [w, h] = arg('--target', '1920x480').split('x').map(Number);
+      let scr = [];
+      // 解析失败时 scr 保持 []，pickScreen 返回 null，CLI 空输出降级到主屏。
+      try { const j = JSON.parse(raw); scr = Array.isArray(j) ? j : [j]; } catch {}
+      const r = pickScreen(scr, { width: w, height: h });
+      if (r) process.stdout.write(JSON.stringify(r));
+    } else if (cmd === 'merge-settings') {
+      const out = mergeSettings(JSON.parse(raw || '{}'),
+        { hookCmd: arg('--hook'), statuslineCmd: arg('--statusline') });
+      process.stdout.write(JSON.stringify(out));
+    } else if (cmd === 'restore-settings') {
+      // 原始命令含空格/引号，走环境变量规避 PS 5.1 原生调用的引号转义坑。
+      const out = restoreSettings(JSON.parse(raw || '{}'),
+        { savedStatusline: process.env.HUD_SAVED_SL || '' });
+      process.stdout.write(JSON.stringify(out));
+    }
   });
 }
