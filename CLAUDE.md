@@ -17,7 +17,8 @@ npm test                              # 全量测试（node --test，跑 tests/ 
 node --test tests/format.test.js      # 跑单个测试文件
 npm start                             # 启动采集器（= node src/server.js），端口 4317
 node tools/replay.js [间隔ms]         # 回放 fixtures 事件序列，需先 npm start（默认间隔 800ms）
-powershell -ExecutionPolicy Bypass -File scripts\install.ps1     # 安装：备份并写入 hook/statusline、注册开机自启
+# 以下三条为 Windows 安装/启动/卸载管理命令
+powershell -ExecutionPolicy Bypass -File scripts\install.ps1     # 安装：备份并写入 hook/statusline、注册开机自启（需重启 Claude Code 生效）
 powershell -ExecutionPolicy Bypass -File scripts\start-hud.ps1   # 启动：拉起采集器、HUD kiosk 铺到副屏
 powershell -ExecutionPolicy Bypass -File scripts\uninstall.ps1   # 卸载：还原 settings.json、移除开机自启
 ```
@@ -74,8 +75,9 @@ Node 测试**共用同一份代码**，可在 Node 里直接 TDD。`hud.js` / `h
 
 - `start-hud.ps1` — 启动器：检测 :4317 是否在监听，没有则后台拉起 `node src/server.js`；
   用 `Screen.AllScreens` 检测副屏坐标，用 Chrome/Edge `--app --kiosk --window-position`
-  把 HUD 铺到指定屏；检测不到副屏时降级到主屏弹窗，不崩溃。
-- `install.ps1` — 安装器：备份用户 `~/.claude/settings.json`，用 `mergeSettings` 写入
+  把 HUD 铺到指定屏；检测不到副屏时降级到主屏以 `--app` 模式打开窗口，不崩溃。
+- `install.ps1` — 安装器：备份用户 `~/.claude/settings.json`（settings.json 存在时整份
+  备份、时间戳命名，不存在则按空配置处理、跳过备份），用 `mergeSettings` 写入
   HUD hook 与 statusline；把启动器注册到 Windows 启动文件夹（`shell:startup`，无需管理员权限）。
 - `uninstall.ps1` — 卸载器：用 `restoreSettings` 还原 settings.json；移除启动文件夹里的启动项。
 - `hud-config.json` — 静态配置（端口、目标分辨率、浏览器偏好）。
@@ -85,7 +87,7 @@ Node 测试**共用同一份代码**，可在 Node 里直接 TDD。`hud.js` / `h
 Node.js ESM 模块。导出纯函数 `pickScreen`（从屏幕列表挑最优副屏）、
 `mergeSettings`（幂等地把 HUD hook/statusline 注入 settings 对象）、
 `restoreSettings`（移除 HUD 配置并还原原始 statusline）。
-同时作为 CLI 被 PS 脚本调用（`node tools/install-lib.js <pick-screen|merge|restore> [opts]`）。
+同时作为 CLI 被 PS 脚本调用（`node tools/install-lib.js <pick-screen|merge-settings|restore-settings> [opts]`）。
 
 ### bin/ — hook 与 statusline 转发器（Windows）
 
