@@ -56,6 +56,24 @@ test('TaskCreate / TaskUpdate 重建任务列表', () => {
   assert.equal(s.tasks[0].status, 'completed');
 });
 
+test('TodoWrite 整体重建任务列表', () => {
+  let s = createSession('abc');
+  s = applyEvent(s, { hook_event_name: 'PostToolUse', tool_name: 'TodoWrite',
+    tool_input: { todos: [
+      { content: '写测试', status: 'completed', activeForm: '写测试中' },
+      { content: '实现功能', status: 'in_progress', activeForm: '实现功能中' },
+      { content: '提交', status: 'pending', activeForm: '提交中' },
+    ] } }, 1);
+  assert.equal(s.tasks.length, 3);
+  assert.equal(s.tasks[0].subject, '写测试');
+  assert.equal(s.tasks[1].status, 'in_progress');
+  // 再次调用应整体替换列表，不累加
+  s = applyEvent(s, { hook_event_name: 'PostToolUse', tool_name: 'TodoWrite',
+    tool_input: { todos: [{ content: '收尾', status: 'pending' }] } }, 2);
+  assert.equal(s.tasks.length, 1);
+  assert.equal(s.tasks[0].subject, '收尾');
+});
+
 test('applyEvent 不修改入参', () => {
   const s0 = createSession('abc');
   applyEvent(s0, { hook_event_name: 'Stop' }, 1);

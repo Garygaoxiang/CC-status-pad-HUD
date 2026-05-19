@@ -31,6 +31,15 @@ export function formatTool(name = 'Tool', input = {}) {
 }
 
 function applyTaskTool(tasks, name, input = {}, response = '') {
+  if (name === 'TodoWrite') {
+    // TodoWrite 每次提交整张待办表，整体替换、不累加
+    const todos = Array.isArray(input.todos) ? input.todos : [];
+    return todos.map((t, i) => ({
+      id: String(i + 1),
+      subject: (t && (t.content || t.activeForm)) || '(task)',
+      status: (t && t.status) || 'pending',
+    }));
+  }
   if (name === 'TaskCreate') {
     const m = String(response || '').match(/#(\d+)/);
     const id = m ? m[1] : String(tasks.length + 1);
@@ -72,7 +81,7 @@ export function applyEvent(session, event, now = Date.now()) {
       s.toolCounts[name] = (s.toolCounts[name] || 0) + 1;
       s.timeline.push({ ts: now, tool: name, label: formatTool(name, event.tool_input) });
       if (s.timeline.length > MAX_TIMELINE) s.timeline = s.timeline.slice(-MAX_TIMELINE);
-      if (name === 'TaskCreate' || name === 'TaskUpdate')
+      if (name === 'TaskCreate' || name === 'TaskUpdate' || name === 'TodoWrite')
         s.tasks = applyTaskTool(s.tasks, name, event.tool_input, event.tool_response);
       break;
     }
