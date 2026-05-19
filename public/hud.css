@@ -4,6 +4,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   @keyframes sweep{0%{top:-7%}100%{top:107%}}
   @keyframes shim{0%{transform:translateX(-120%)}100%{transform:translateX(460%)}}
   @keyframes blink{0%,48%{opacity:1}49%,100%{opacity:.1}}
+  @keyframes scell{0%,52%{opacity:1}53%,100%{opacity:.34}}
   .hud{width:1920px;height:480px;box-sizing:border-box;
     padding:12px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;
     font-family:'Segoe UI',system-ui,sans-serif;color:#d5e3f5;font-weight:600;
@@ -53,9 +54,14 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   .ctx .top b{color:#27d3f5;text-shadow:0 0 7px #27d3f5}
   .sess{display:flex;gap:6px;flex:none}
   .sess span{width:36px;height:38px;font-size:20px;display:flex;align-items:center;justify-content:center;
-    background:#0d1f3e;border:1px solid #1f3e6b;color:#6b82a3;
+    background:#0d1f3e;border:1px solid #1f3e6b;color:#6b82a3;transition:transform .2s;
     clip-path:polygon(50% 0,100% 28%,100% 72%,50% 100%,0 72%,0 28%)}
-  .sess span.on{background:#27d3f5;color:#04101f;font-weight:800;border-color:#27d3f5;box-shadow:0 0 13px rgba(39,211,245,.6)}
+  /* 编号块按各会话 status 上色：working/running 青、idle(完成待命) 绿、waiting(需决策) 红 */
+  .sess span.s-working,.sess span.s-running{background:#27d3f5;border-color:#27d3f5;color:#04101f}
+  .sess span.s-idle{background:#3ff58f;border-color:#3ff58f;color:#04101f}
+  .sess span.s-waiting{background:#ff2d6e;border-color:#ff2d6e;color:#fff;animation:scell .85s steps(1) infinite}
+  /* on = 当前 HUD 正显示的会话：放大 + 白色光晕描边 */
+  .sess span.on{font-weight:800;transform:scale(1.1);filter:drop-shadow(0 0 6px rgba(255,255,255,.92))}
 
   .cols{flex:1;display:flex;gap:10px;min-height:0}
   .tl{margin-top:11px;display:flex;flex-direction:column;gap:2px}

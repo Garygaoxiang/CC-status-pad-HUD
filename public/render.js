@@ -31,8 +31,15 @@ export function renderBanner(snapshot, session) {
     chip(s.projectName),
     s.branch ? `<span class="chip mono">⎇ ${esc(s.branch)}</span>` : '',
   ].join('');
-  const sess = sessions.map((x, i) =>
-    `<span class="${x && x.sessionId === s.sessionId ? 'on' : ''}">${i + 1}</span>`).join('');
+  // 编号块：每个会话一个，class 含 status（s-idle/s-working/s-running/s-waiting）
+  // 与 on（当前 HUD 正显示的会话）。颜色由 hud.css 按 status 区分。
+  const sess = sessions.map((x, i) => {
+    const cls = [
+      x && x.status ? `s-${x.status}` : '',
+      x && x.sessionId === s.sessionId ? 'on' : '',
+    ].filter(Boolean).join(' ');
+    return `<span class="${cls}">${i + 1}</span>`;
+  }).join('');
   return `<div class="hex">CC</div>
 <div class="stdot"></div>
 <div class="sttxt">${bannerStatus(s)}</div>

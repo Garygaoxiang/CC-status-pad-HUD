@@ -31,7 +31,22 @@ test('renderBanner 含状态、芯片、会话切换', () => {
   assert.match(html, /OPUS 4\.7/);
   assert.match(html, /class="chip m"/);
   assert.match(html, /⎇ main/);
-  assert.match(html, /<span class="on">1<\/span>/);
+  assert.match(html, /<span class="s-running on">1<\/span>/);
+});
+
+test('renderBanner 编号块按会话状态上色', () => {
+  const snap = {
+    focusId: 'a',
+    sessions: [
+      { sessionId: 'a', status: 'running' },
+      { sessionId: 'b', status: 'idle' },
+      { sessionId: 'c', status: 'waiting' },
+    ],
+  };
+  const html = renderBanner(snap, snap.sessions[0]);
+  assert.match(html, /<span class="s-running on">1<\/span>/);  // 焦点会话：状态类 + on
+  assert.match(html, /<span class="s-idle">2<\/span>/);        // 完成 → 绿
+  assert.match(html, /<span class="s-waiting">3<\/span>/);     // 需决策 → 红
 });
 
 test('renderBanner 转义注入字符', () => {
