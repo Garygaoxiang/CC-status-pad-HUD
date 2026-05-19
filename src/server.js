@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   applyEvent, applyStatusline, createSession, pickFocus, pruneStale,
 } from './state.js';
-import { readToken, fetchUsage } from './usage.js';
+import { readToken, fetchUsage, readProxy } from './usage.js';
 
 const DEFAULT_PORT = Number(process.env.HUD_PORT) || 4317;
 
@@ -101,7 +101,7 @@ export function createCollector() {
   const pollUsage = async () => {
     const token = readToken();
     if (!token) return;
-    const u = await fetchUsage(token);
+    const u = await fetchUsage(token, readProxy());
     if (u) { usage = u; broadcast(); }
   };
 

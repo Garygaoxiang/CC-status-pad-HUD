@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseUsage } from '../src/usage.js';
+import { parseUsage, pickProxy } from '../src/usage.js';
 
 test('parseUsage 取整并夹紧 0-100', () => {
   const u = parseUsage({
@@ -22,4 +22,23 @@ test('parseUsage 夹紧越界值', () => {
   const u = parseUsage({ five_hour: { utilization: 250 }, seven_day: { utilization: -5 } });
   assert.equal(u.fiveHour, 100);
   assert.equal(u.sevenDay, 0);
+});
+
+test('pickProxy 优先取环境变量', () => {
+  assert.equal(
+    pickProxy({ env: { HTTPS_PROXY: 'http://settings:1' } }, { HTTPS_PROXY: 'http://env:2' }),
+    'http://env:2',
+  );
+});
+
+test('pickProxy 回退到 settings.json 的 env 块', () => {
+  assert.equal(
+    pickProxy({ env: { HTTPS_PROXY: 'http://127.0.0.1:10809' } }, {}),
+    'http://127.0.0.1:10809',
+  );
+});
+
+test('pickProxy 无配置返回 null', () => {
+  assert.equal(pickProxy({}, {}), null);
+  assert.equal(pickProxy(undefined, undefined), null);
 });
