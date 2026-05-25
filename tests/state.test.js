@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSession, applyEvent, formatTool } from '../src/state.js';
+import { createSession, applyEvent, applyStatusline, formatTool } from '../src/state.js';
 
 test('createSession 给出空闲初始记录', () => {
   const s = createSession('abc');
@@ -85,7 +85,7 @@ test('applyEvent 不修改入参', () => {
   assert.deepEqual(s0.toolCounts, {});
 });
 
-import { applyStatusline, pickFocus, pruneStale, STALE_MS } from '../src/state.js';
+import { pickFocus, pruneStale, STALE_MS } from '../src/state.js';
 
 test('applyStatusline 归并模型与花费', () => {
   let s = createSession('abc');
@@ -117,4 +117,20 @@ test('pruneStale 移除过期与已结束会话', () => {
   ]);
   pruneStale(m, now);
   assert.deepEqual([...m.keys()], ['fresh']);
+});
+
+test('applyStatusline 存入 transcript_path 到 session.transcriptPath', () => {
+  const s = applyStatusline(createSession('abc'), {
+    transcript_path: 'C:/foo/bar.jsonl',
+    model: { display_name: 'Opus 4.7 (1M context)' },
+  }, 100);
+  assert.equal(s.transcriptPath, 'C:/foo/bar.jsonl');
+  assert.equal(s.model, 'Opus 4.7 (1M context)');
+});
+
+test('applyStatusline 无 transcript_path 时保留原值', () => {
+  let s = createSession('abc');
+  s = applyStatusline(s, { transcript_path: '/a.jsonl' }, 1);
+  s = applyStatusline(s, {}, 2); // 无该字段，不应清空
+  assert.equal(s.transcriptPath, '/a.jsonl');
 });

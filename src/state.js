@@ -15,6 +15,7 @@ export function createSession(sessionId) {
     timeline: [], tasks: [], toolCounts: {},
     contextPct: 0, linesAdded: 0, linesRemoved: 0, filesChanged: 0,
     costUsd: 0, durationMs: 0, lastSeen: 0,
+    transcriptPath: null,
   };
 }
 
@@ -95,6 +96,7 @@ export function applyEvent(session, event, now = Date.now()) {
 export function applyStatusline(session, sl, now = Date.now()) {
   const s = { ...session, lastSeen: now };
   if (sl.model?.display_name) s.model = sl.model.display_name;
+  if (sl.transcript_path) s.transcriptPath = sl.transcript_path;
   if (sl.workspace?.current_dir) {
     s.cwd = sl.workspace.current_dir;
     s.projectName = basename(s.cwd);

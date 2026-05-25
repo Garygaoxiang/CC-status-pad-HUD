@@ -6,6 +6,9 @@ import {
   applyEvent, applyStatusline, createSession, pickFocus, pruneStale,
 } from './state.js';
 import { readToken, fetchUsage, readProxy } from './usage.js';
+import { lastUsageFromTranscript, parseContextWindow } from './transcript.js';
+
+const TRANSCRIPT_POLL_MS = 5_000;
 
 const DEFAULT_PORT = Number(process.env.HUD_PORT) || 4317;
 
@@ -105,17 +108,43 @@ export function createCollector() {
     if (u) { usage = u; broadcast(); }
   };
 
+  // 轮询所有活跃会话的 transcript，更新 contextPct。
+  // 读取整个 JSONL 文件、找最末 assistant usage —— 对几 MB 文本来说成本可接受。
+  // 失败静默：transcript 缺失/路径无效都不应影响其他会话与 HUD 渲染。
+  let ctxTimer = null;
+  const pollTranscripts = async () => {
+    let dirty = false;
+    for (const sess of sessions.values()) {
+      if (!sess.transcriptPath) continue;
+      try {
+        const text = await readFile(sess.transcriptPath, 'utf8');
+        const used = lastUsageFromTranscript(text);
+        if (used == null) continue;
+        const win = parseContextWindow(sess.model);
+        const pct = Math.max(0, Math.min(100, Math.round((used / win) * 100)));
+        if (pct !== sess.contextPct) {
+          sessions.set(sess.sessionId, { ...sess, contextPct: pct });
+          dirty = true;
+        }
+      } catch { /* 文件读不到就跳过这一轮 */ }
+    }
+    if (dirty) broadcast();
+  };
+
   function start(port = DEFAULT_PORT, { poll = true } = {}) {
     server.listen(port);
     if (poll) {
       pollUsage();
       timer = setInterval(pollUsage, 5 * 60 * 1000);
       timer.unref();
+      ctxTimer = setInterval(pollTranscripts, TRANSCRIPT_POLL_MS);
+      ctxTimer.unref();
     }
     return server;
   }
   function stop() {
     if (timer) clearInterval(timer);
+    if (ctxTimer) clearInterval(ctxTimer);
     for (const res of clients) res.end();
     clients.clear();
     return new Promise((resolve) => server.close(resolve));
