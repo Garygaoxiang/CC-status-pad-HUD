@@ -118,6 +118,10 @@ Node.js ESM 模块。导出纯函数 `pickScreen`（从屏幕列表挑最优副�
 
 - 会话记录字段以 `state.js` 的 `createSession()` 为准。
 - `effort` 来自 statusline 的 `effort.level`（low/medium/high/xhigh/max），反映当次真实值；模型不支持时为 `null`，HUD 不渲染该 chip。
+- `workflow` 来自只读文件轮询（`src/workflow.js` + server `pollWorkflows`）：运行期为
+  `{name,runId,status:'running',doneAgents(M),totalAgents(N),phaseTotal}`；完成态 60s 内
+  `status:'done'`；其余为 `null`。运行期只有 M/N 计数，当前 phase 不可得（见
+  `docs/plans/2026-06-04-workflow-display.md`）。
 - `usage` 形如 `{ fiveHour, sevenDay, fiveHourResetAt, sevenDayResetAt }`
   （百分比 0-100 整数或 `null`，见 `usage.js` 的 `parseUsage`），未取到时整体为 `null`。
 - **已知限制**：`state.js` 当前不填充 `contextPct` / `filesChanged`（恒为 0）。
