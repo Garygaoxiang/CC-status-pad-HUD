@@ -145,3 +145,34 @@ test('renderBanner 无 effort 不渲染 effort chip', () => {
   const html = renderBanner({ sessions: [] }, { effort: null });
   assert.doesNotMatch(html, /⚡/);
 });
+
+test('renderBanner 含 workflow chip（running）', () => {
+  const html = renderBanner({ sessions: [] },
+    { workflow: { name: 'rev', status: 'running', doneAgents: 3, totalAgents: 8, phaseTotal: 4 } });
+  assert.match(html, /class="chip wf-run"/);
+  assert.match(html, /⚙ WF 3\/8/);
+});
+
+test('renderBanner 无 workflow 不渲染 chip', () => {
+  assert.doesNotMatch(renderBanner({ sessions: [] }, { workflow: null }), /⚙ WF/);
+});
+
+test('renderTimeline 顶部渲染 workflow 进度块', () => {
+  const html = renderTimeline({ timeline: [],
+    workflow: { name: 'rev', status: 'running', doneAgents: 3, totalAgents: 8, phaseTotal: 4 } });
+  assert.match(html, /class="wfp wf-run"/);
+  assert.match(html, /⚙ rev/);
+  assert.match(html, /3 \/ 8/);
+  assert.match(html, /phase ·\/4/);
+});
+
+test('renderTimeline 无 workflow 不渲染进度块', () => {
+  assert.doesNotMatch(renderTimeline({ timeline: [], workflow: null }), /wfp/);
+});
+
+test('renderTimeline workflow 名转义注入', () => {
+  const html = renderTimeline({ timeline: [],
+    workflow: { name: '<img>', status: 'running', doneAgents: 1, totalAgents: 2, phaseTotal: null } });
+  assert.doesNotMatch(html, /<img>/);
+  assert.match(html, /&lt;img&gt;/);
+});

@@ -2,6 +2,7 @@
 import {
   esc, statusText, clock, toolColor, barWidth, countdown, taskProgress, duration,
   effortLabel, effortClass,
+  workflowChipText, workflowClass, workflowPct, workflowPhaseText,
 } from './format.js';
 
 export function focusSession(snapshot) {
@@ -20,6 +21,23 @@ function effortChip(level) {
   return `<span class="chip ${effortClass(level)}">⚡ ${esc(label)}</span>`;
 }
 
+// banner workflow chip：照 effort chip 先例，无 workflow 返回空串
+function workflowChip(wf) {
+  const text = workflowChipText(wf);
+  return text ? `<span class="chip ${workflowClass(wf)}">${esc(text)}</span>` : '';
+}
+
+// 时间线顶部 workflow 进度块：名称 + M/N + 进度条 + phase（复用 .bar/.sh）
+function workflowProgress(wf) {
+  if (!wf) return '';
+  const phase = workflowPhaseText(wf);
+  return `<div class="wfp ${workflowClass(wf)}">`
+    + `<div class="wfp-h"><span class="nm">⚙ ${esc(wf.name)}</span><span class="n">${esc(String(wf.doneAgents))} / ${esc(String(wf.totalAgents))}</span></div>`
+    + `<div class="wfp-b"><div class="bar"><i style="width:${barWidth(workflowPct(wf))}"><span class="sh"></span></i></div>`
+    + (phase ? `<span class="ph mono">${esc(phase)}</span>` : '')
+    + `</div></div>`;
+}
+
 function bannerStatus(session) {
   const { big, sub } = statusText(session);
   const [head, ...tail] = big.split(' · ');
@@ -35,6 +53,7 @@ export function renderBanner(snapshot, session) {
   const chips = [
     chip(s.model && String(s.model).toUpperCase(), 'k'),
     effortChip(s.effort),
+    workflowChip(s.workflow),
     chip(s.plan, 'm'),
     chip(s.projectName),
     s.branch ? `<span class="chip mono">⎇ ${esc(s.branch)}</span>` : '',
@@ -77,7 +96,7 @@ export function renderTimeline(session) {
   if (!rows.length) {
     rows.push('<div class="ev"><span class="x" style="color:#516a90">等待事件…</span></div>');
   }
-  return rows.join('');
+  return workflowProgress(s.workflow) + rows.join('');
 }
 
 export function renderTasks(session) {
