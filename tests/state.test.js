@@ -134,3 +134,14 @@ test('applyStatusline 无 transcript_path 时保留原值', () => {
   s = applyStatusline(s, {}, 2); // 无该字段，不应清空
   assert.equal(s.transcriptPath, '/a.jsonl');
 });
+
+test('createSession 初始 effort 为 null', () => {
+  assert.equal(createSession('abc').effort, null);
+});
+
+test('applyStatusline 解析 effort.level，且可从有清回无（反映当次）', () => {
+  let s = applyStatusline(createSession('abc'), { effort: { level: 'max' } }, 1);
+  assert.equal(s.effort, 'max');
+  s = applyStatusline(s, { model: { display_name: 'Opus' } }, 2); // 当次无 effort
+  assert.equal(s.effort, null);
+});

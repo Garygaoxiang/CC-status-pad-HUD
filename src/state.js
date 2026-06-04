@@ -11,7 +11,7 @@ const truncate = (str, n) => {
 export function createSession(sessionId) {
   return {
     sessionId, status: 'idle', currentTool: null,
-    model: null, plan: null, cwd: null, projectName: null, branch: null,
+    model: null, effort: null, plan: null, cwd: null, projectName: null, branch: null,
     timeline: [], tasks: [], toolCounts: {},
     contextPct: 0, linesAdded: 0, linesRemoved: 0, filesChanged: 0,
     costUsd: 0, durationMs: 0, lastSeen: 0,
@@ -96,6 +96,9 @@ export function applyEvent(session, event, now = Date.now()) {
 export function applyStatusline(session, sl, now = Date.now()) {
   const s = { ...session, lastSeen: now };
   if (sl.model?.display_name) s.model = sl.model.display_name;
+  // effort 与其他字段不同：反映当次真实值。statusline 是完整快照，
+  // effort 缺省即"当前模型不支持/未设"，必须能从有清回无，否则切模型后残留旧档。
+  s.effort = sl.effort?.level ?? null;
   if (sl.transcript_path) s.transcriptPath = sl.transcript_path;
   if (sl.workspace?.current_dir) {
     s.cwd = sl.workspace.current_dir;
