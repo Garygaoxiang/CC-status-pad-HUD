@@ -4,6 +4,7 @@
   "transcript_path": "C:\\Users\\demo\\.claude\\projects\\demo\\transcript.jsonl",
   "cwd": "H:\\proj\\demo-api",
   "model": { "id": "claude-opus-4-7", "display_name": "Opus 4.7" },
+  "effort": { "level": "max" },
   "workspace": { "current_dir": "H:\\proj\\demo-api", "project_dir": "H:\\proj\\demo-api" },
   "version": "2.1.0",
   "output_style": { "name": "default" },
