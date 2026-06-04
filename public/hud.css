@@ -53,6 +53,19 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   .chip.e-hi{border-color:#f0a35e;color:#ffc88f;background:#241606}
   .chip.e-max{border-color:#ffcf3f;color:#ffe79a;background:#241d04;animation:effortPulse 1.1s ease-in-out infinite}
   @keyframes effortPulse{0%,100%{box-shadow:0 0 4px rgba(255,207,63,.35)}50%{box-shadow:0 0 14px rgba(255,207,63,.85)}}
+  /* workflow：chip 配色（照 effort）+ 时间线顶部进度块。复用 .chip/.bar/.sh */
+  .chip.wf-run{border-color:#27d3f5;color:#8fe9fb;background:#06202f}
+  .chip.wf-done{border-color:#3ff58f;color:#9fffce;background:#05231a}
+  .wfp{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #173052}
+  .wfp-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .wfp-h .nm{font-size:20px;color:#8fe9fb}
+  .wfp-h .n{font-size:19px;color:#7f97b5}
+  .wfp.wf-done .nm{color:#9fffce}
+  .wfp-b{display:flex;align-items:center;gap:10px}
+  .wfp-b .bar{flex:1}
+  .wfp-b .ph{font-size:17px;color:#7f97b5;white-space:nowrap}
+  .wfp.wf-run .bar i{background:linear-gradient(90deg,#27d3f5,#3ff58f)}
+  .wfp.wf-done .bar i{background:linear-gradient(90deg,#3ff58f,#9fffce)}
   .ctx{width:220px;flex:none}
   .ctx .top{display:flex;justify-content:space-between;font-size:18px;color:#8499b8;margin-bottom:6px;letter-spacing:1.5px}
   .ctx .top b{color:#27d3f5;text-shadow:0 0 7px #27d3f5}
