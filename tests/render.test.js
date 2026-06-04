@@ -134,3 +134,14 @@ test('renderUsage 有百分比但无重置时间显示同步中', () => {
   assert.match(html, /同步中/);
   assert.doesNotMatch(html, /后重置/);
 });
+
+test('renderBanner 含 effort chip 并按等级配色', () => {
+  const html = renderBanner({ sessions: [] }, { effort: 'max' });
+  assert.match(html, /class="chip e-max"/);
+  assert.match(html, /⚡ MAX/);
+});
+
+test('renderBanner 无 effort 不渲染 effort chip', () => {
+  const html = renderBanner({ sessions: [] }, { effort: null });
+  assert.doesNotMatch(html, /⚡/);
+});

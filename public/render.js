@@ -1,6 +1,7 @@
 // public/render.js — 纯函数：输入快照/会话，返回 HTML 字符串片段。浏览器与 Node 测试共用。
 import {
   esc, statusText, clock, toolColor, barWidth, countdown, taskProgress, duration,
+  effortLabel, effortClass,
 } from './format.js';
 
 export function focusSession(snapshot) {
@@ -11,6 +12,12 @@ export function focusSession(snapshot) {
 
 function chip(text, cls = '') {
   return text ? `<span class="${cls ? `chip ${cls}` : 'chip'}">${esc(text)}</span>` : '';
+}
+
+function effortChip(level) {
+  const label = effortLabel(level);
+  if (!label) return '';
+  return `<span class="chip ${effortClass(level)}">⚡ ${esc(label)}</span>`;
 }
 
 function bannerStatus(session) {
@@ -27,6 +34,7 @@ export function renderBanner(snapshot, session) {
   const sessions = Array.isArray((snapshot || {}).sessions) ? snapshot.sessions : [];
   const chips = [
     chip(s.model && String(s.model).toUpperCase(), 'k'),
+    effortChip(s.effort),
     chip(s.plan, 'm'),
     chip(s.projectName),
     s.branch ? `<span class="chip mono">⎇ ${esc(s.branch)}</span>` : '',
