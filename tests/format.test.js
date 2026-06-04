@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   esc, statusText, clock, toolColor, barWidth, countdown, taskProgress, duration,
   effortLabel, effortClass,
+  workflowChipText, workflowClass, workflowPct, workflowPhaseText,
 } from '../public/format.js';
 
 test('esc 转义 HTML 特殊字符', () => {
@@ -85,4 +86,20 @@ test('effortClass 三档分色、空与未知不上色', () => {
   assert.equal(effortClass('max'), 'e-max');
   assert.equal(effortClass(null), '');
   assert.equal(effortClass('weird'), '');
+});
+
+test('workflow 标量：running/done/null 与边界', () => {
+  const run = { status: 'running', doneAgents: 3, totalAgents: 8, phaseTotal: 4 };
+  const done = { status: 'done', doneAgents: 8, totalAgents: 8, phaseTotal: null };
+  assert.equal(workflowChipText(run), '⚙ WF 3/8');
+  assert.equal(workflowChipText(done), '⚙ WF ✓ 8/8');
+  assert.equal(workflowChipText(null), '');
+  assert.equal(workflowClass(run), 'wf-run');
+  assert.equal(workflowClass(done), 'wf-done');
+  assert.equal(workflowClass(null), '');
+  assert.equal(workflowPct(run), 38);
+  assert.equal(workflowPct(done), 100);
+  assert.equal(workflowPct({ status: 'running', doneAgents: 0, totalAgents: 0 }), 0);
+  assert.equal(workflowPhaseText(run), 'phase ·/4');
+  assert.equal(workflowPhaseText(done), '');
 });

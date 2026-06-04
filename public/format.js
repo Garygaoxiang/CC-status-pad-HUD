@@ -84,3 +84,26 @@ export function effortClass(level) {
   if (level === 'low' || level === 'medium') return 'e-lo';
   return ''; // 空值或未知：基础 chip 样式，不分色
 }
+
+// workflow chip 文案：running 显 "⚙ WF M/N"，done 加 ✓，无则空
+export function workflowChipText(wf) {
+  if (!wf) return '';
+  const mn = `${wf.doneAgents}/${wf.totalAgents}`;
+  return wf.status === 'done' ? `⚙ WF ✓ ${mn}` : `⚙ WF ${mn}`;
+}
+// workflow chip / 进度块配色类：running 青、done 绿、无则空
+export function workflowClass(wf) {
+  if (!wf) return '';
+  return wf.status === 'done' ? 'wf-done' : 'wf-run';
+}
+// workflow 进度百分比：done 恒 100，running 按 M/N，N=0 时 0
+export function workflowPct(wf) {
+  if (!wf) return 0;
+  if (wf.status === 'done') return 100;
+  const n = Number(wf.totalAgents) || 0;
+  return n > 0 ? Math.round((Number(wf.doneAgents) || 0) / n * 100) : 0;
+}
+// workflow phase 文案：有 phaseTotal 显 "phase ·/N"（当前 phase 不可得），无则空
+export function workflowPhaseText(wf) {
+  return (wf && wf.phaseTotal != null) ? `phase ·/${wf.phaseTotal}` : '';
+}
