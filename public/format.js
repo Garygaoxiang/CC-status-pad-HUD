@@ -70,3 +70,17 @@ export function duration(ms) {
   const h = Math.floor(total / 3600);
   return h > 0 ? `${h}:${p(m)}:${p(s)}` : `${m}:${p(s)}`;
 }
+
+const EFFORT_LABEL = { low: 'LOW', medium: 'MED', high: 'HIGH', xhigh: 'XHIGH', max: 'MAX' };
+
+export function effortLabel(level) {
+  if (!level) return '';
+  return EFFORT_LABEL[level] || String(level).toUpperCase();
+}
+
+export function effortClass(level) {
+  if (level === 'high') return 'e-hi';
+  if (level === 'xhigh' || level === 'max') return 'e-max';
+  if (level === 'low' || level === 'medium') return 'e-lo';
+  return ''; // 空值或未知：基础 chip 样式，不分色
+}

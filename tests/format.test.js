@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   esc, statusText, clock, toolColor, barWidth, countdown, taskProgress, duration,
+  effortLabel, effortClass,
 } from '../public/format.js';
 
 test('esc 转义 HTML 特殊字符', () => {
@@ -64,4 +65,24 @@ test('duration 格式化时长', () => {
   assert.equal(duration(23 * 60000 + 11000), '23:11');
   assert.equal(duration(3661000), '1:01:01');
   assert.equal(duration(0), '0:00');
+});
+
+test('effortLabel 映射等级、未知大写、空值空串', () => {
+  assert.equal(effortLabel('low'), 'LOW');
+  assert.equal(effortLabel('medium'), 'MED');
+  assert.equal(effortLabel('high'), 'HIGH');
+  assert.equal(effortLabel('xhigh'), 'XHIGH');
+  assert.equal(effortLabel('max'), 'MAX');
+  assert.equal(effortLabel('weird'), 'WEIRD');
+  assert.equal(effortLabel(null), '');
+});
+
+test('effortClass 三档分色、空与未知不上色', () => {
+  assert.equal(effortClass('low'), 'e-lo');
+  assert.equal(effortClass('medium'), 'e-lo');
+  assert.equal(effortClass('high'), 'e-hi');
+  assert.equal(effortClass('xhigh'), 'e-max');
+  assert.equal(effortClass('max'), 'e-max');
+  assert.equal(effortClass(null), '');
+  assert.equal(effortClass('weird'), '');
 });
