@@ -6,9 +6,11 @@ import {
   applyEvent, applyStatusline, createSession, pickFocus, pruneStale,
 } from './state.js';
 import { readToken, fetchUsage, readProxy } from './usage.js';
+import { collectWorkflow, sessionDirFromTranscript } from './workflow.js';
 import { lastUsageFromTranscript, parseContextWindow } from './transcript.js';
 
 const TRANSCRIPT_POLL_MS = 5_000;
+const WF_POLL_MS = 8_000;
 
 const DEFAULT_PORT = Number(process.env.HUD_PORT) || 4317;
 
@@ -131,6 +133,24 @@ export function createCollector() {
     if (dirty) broadcast();
   };
 
+  // 轮询所有活跃会话的 workflow 产物目录，更新 session.workflow。
+  // 只读 fs，单会话失败静默：绝不影响其他会话与 HUD 渲染。
+  let wfTimer = null;
+  const pollWorkflows = async () => {
+    let dirty = false;
+    for (const sess of sessions.values()) {
+      if (!sess.transcriptPath) continue;
+      try {
+        const wf = await collectWorkflow(sessionDirFromTranscript(sess.transcriptPath));
+        if (JSON.stringify(wf) !== JSON.stringify(sess.workflow)) {
+          sessions.set(sess.sessionId, { ...sess, workflow: wf });
+          dirty = true;
+        }
+      } catch { /* 单会话失败不影响其他会话与 HUD */ }
+    }
+    if (dirty) broadcast();
+  };
+
   function start(port = DEFAULT_PORT, { poll = true } = {}) {
     server.listen(port);
     if (poll) {
@@ -139,12 +159,16 @@ export function createCollector() {
       timer.unref();
       ctxTimer = setInterval(pollTranscripts, TRANSCRIPT_POLL_MS);
       ctxTimer.unref();
+      pollWorkflows();
+      wfTimer = setInterval(pollWorkflows, WF_POLL_MS);
+      wfTimer.unref();
     }
     return server;
   }
   function stop() {
     if (timer) clearInterval(timer);
     if (ctxTimer) clearInterval(ctxTimer);
+    if (wfTimer) clearInterval(wfTimer);
     for (const res of clients) res.end();
     clients.clear();
     return new Promise((resolve) => server.close(resolve));
