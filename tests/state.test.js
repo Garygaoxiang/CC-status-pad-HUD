@@ -145,3 +145,7 @@ test('applyStatusline 解析 effort.level，且可从有清回无（反映当次
   s = applyStatusline(s, { model: { display_name: 'Opus' } }, 2); // 当次无 effort
   assert.equal(s.effort, null);
 });
+
+test('createSession 初始 workflow 为 null', () => {
+  assert.equal(createSession('abc').workflow, null);
+});
