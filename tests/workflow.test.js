@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  sessionDirFromTranscript, parseWorkflowName, parsePhaseTotal, deriveWorkflow, DONE_TTL,
+  sessionDirFromTranscript, parseWorkflowName, parsePhaseTotal, deriveWorkflow, DONE_TTL, collectWorkflow,
 } from '../src/workflow.js';
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 test('sessionDirFromTranscript 去 .jsonl 后缀', () => {
   assert.equal(sessionDirFromTranscript('/a/b/sid.jsonl'), '/a/b/sid');
@@ -66,4 +69,31 @@ test('deriveWorkflow 多 running 取 agentMtime 最新', () => {
     { runId: 'wf_new', wfJsonExists: false, metaCount: 3, jsonlCount: 2, agentMtime: 900, name: 'new' },
   ] }, 1000);
   assert.equal(wf.runId, 'wf_new');
+});
+
+test('collectWorkflow 从真实目录采集 running 态', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'hud-wf-'));
+  const sid = join(root, 'sid');
+  const runId = 'wf_test123-abc';
+  const runDir = join(sid, 'subagents', 'workflows', runId);
+  await mkdir(runDir, { recursive: true });
+  await mkdir(join(sid, 'workflows', 'scripts'), { recursive: true });
+  await writeFile(join(runDir, 'agent-a1.meta.json'), '{"agentType":"x"}');
+  await writeFile(join(runDir, 'agent-a2.meta.json'), '{"agentType":"x"}');
+  await writeFile(join(runDir, 'agent-a1.jsonl'), '{}');
+  await writeFile(join(sid, 'workflows', 'scripts', `myflow-${runId}.js`),
+    "export const meta = { name: 'myflow', phases: [{title:'A'},{title:'B'}] }");
+  const wf = await collectWorkflow(sid, 2000);
+  assert.equal(wf.status, 'running');
+  assert.equal(wf.doneAgents, 1);
+  assert.equal(wf.totalAgents, 2);
+  assert.equal(wf.name, 'myflow');
+  assert.equal(wf.phaseTotal, 2);
+  await rm(root, { recursive: true, force: true });
+});
+
+test('collectWorkflow 无 workflow 目录 → null', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'hud-wf-'));
+  assert.equal(await collectWorkflow(join(root, 'empty'), 1000), null);
+  await rm(root, { recursive: true, force: true });
 });

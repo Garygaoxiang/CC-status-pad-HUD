@@ -1,4 +1,7 @@
 // src/workflow.js — workflow 进度采集。纯函数 + 薄 IO，照 transcript.js 先例。
+import { readdir, readFile, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+
 export const DONE_TTL = 60_000;
 
 // transcriptPath ".../<sid>.jsonl" → session 目录 ".../<sid>"；非 jsonl 返回 null
@@ -44,4 +47,51 @@ export function deriveWorkflow(raw, now = Date.now()) {
   }
   return { name: r.wfName || r.name || r.runId, runId: r.runId, status: 'done',
     doneAgents: r.agentCount, totalAgents: r.agentCount, phaseTotal: r.phaseTotal ?? null };
+}
+
+// 薄 IO：扫 session 目录 workflow 产物，组装 raw 交 deriveWorkflow。全程容错，最坏返回 null。
+export async function collectWorkflow(sessionDir, now = Date.now()) {
+  if (!sessionDir) return null;
+  const subRoot = join(sessionDir, 'subagents', 'workflows');
+  const wfRoot = join(sessionDir, 'workflows');
+  const scriptsRoot = join(wfRoot, 'scripts');
+  let runIds;
+  try {
+    const ents = await readdir(subRoot, { withFileTypes: true });
+    runIds = ents.filter((e) => e.isDirectory()).map((e) => e.name);
+  } catch { return null; } // 从没跑过 workflow
+  let scripts = [];
+  try { scripts = await readdir(scriptsRoot); } catch { /* 无 scripts 不致命 */ }
+  const runs = [];
+  for (const runId of runIds) {
+    const dir = join(subRoot, runId);
+    let files;
+    try { files = await readdir(dir); } catch { continue; }
+    const metaCount = files.filter((f) => f.endsWith('.meta.json')).length;
+    const jsonlCount = files.filter((f) => f.startsWith('agent-') && f.endsWith('.jsonl')).length;
+    let agentMtime = 0;
+    for (const f of files) {
+      try { const st = await stat(join(dir, f)); if (st.mtimeMs > agentMtime) agentMtime = st.mtimeMs; } catch { /* 跳过 */ }
+    }
+    let wfJsonExists = false, wfJsonMtime = 0, wfName = null, agentCount = jsonlCount, phaseTotal = null;
+    try {
+      const wfPath = join(wfRoot, `${runId}.json`);
+      wfJsonMtime = (await stat(wfPath)).mtimeMs;
+      wfJsonExists = true;
+      const j = JSON.parse(await readFile(wfPath, 'utf8'));
+      wfName = j.workflowName || null;
+      if (Number.isFinite(j.agentCount)) agentCount = j.agentCount;
+      if (Array.isArray(j.phases) && j.phases.length) phaseTotal = j.phases.length;
+    } catch { /* 无 wf json = 运行中 */ }
+    const script = scripts.find((s) => s.endsWith(`-${runId}.js`));
+    let name = null;
+    if (script) {
+      name = parseWorkflowName(script, runId);
+      if (phaseTotal == null) {
+        try { phaseTotal = parsePhaseTotal(await readFile(join(scriptsRoot, script), 'utf8')); } catch { /* 降级 */ }
+      }
+    }
+    runs.push({ runId, wfJsonExists, wfJsonMtime, metaCount, jsonlCount, agentMtime, name, wfName, agentCount, phaseTotal });
+  }
+  return deriveWorkflow({ runs }, now);
 }
