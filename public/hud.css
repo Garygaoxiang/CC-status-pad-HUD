@@ -53,6 +53,9 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   .chip.e-hi{border-color:#f0a35e;color:#ffc88f;background:#241606}
   .chip.e-max{border-color:#ffcf3f;color:#ffe79a;background:#241d04;animation:effortPulse 1.1s ease-in-out infinite}
   @keyframes effortPulse{0%,100%{box-shadow:0 0 4px rgba(255,207,63,.35)}50%{box-shadow:0 0 14px rgba(255,207,63,.85)}}
+  /* ultracode 专属：紫罗兰，区别于 e-max 金色；脉冲更快传达最高强度 */
+  .chip.e-ultra{border-color:#b58bff;color:#e7d6ff;background:#1a0a33;animation:ultraPulse 1s ease-in-out infinite}
+  @keyframes ultraPulse{0%,100%{box-shadow:0 0 5px rgba(181,139,255,.4)}50%{box-shadow:0 0 17px rgba(181,139,255,.95)}}
   /* workflow：chip 配色（照 effort）+ 时间线顶部进度块。复用 .chip/.bar/.sh */
   .chip.wf-run{border-color:#27d3f5;color:#8fe9fb;background:#06202f}
   .chip.wf-done{border-color:#3ff58f;color:#9fffce;background:#05231a}
