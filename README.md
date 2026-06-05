@@ -108,6 +108,36 @@ The HUD canvas is designed at 1920×480, but **auto-scales and centers** to fit 
 - **Pick the right screen (multi-monitor)**: set `targetScreen` `width` / `height` in `scripts/hud-config.json` to your screen; `pickScreen` matches it exactly (falling back to the first non-primary screen otherwise).
 - **Remove the bars / tune for your ratio** (advanced): change the `.hud{width/height}` canvas size in `public/hud.css` and adjust the three-column widths and font sizes accordingly—a layout reflow for a new aspect ratio that takes some CSS.
 
+## 📱 Use an old phone / tablet as the HUD (LAN mode)
+
+Don't want to buy a screen? **Any old Android / iOS tablet or phone** on the same WiFi can be the HUD—reuse old hardware, zero cost. How it works: the collector on `:4317` also listens on the LAN, so an old device just opens it in its own browser (unlike the TURZX panel, which connects over HDMI/USB as a PC monitor).
+
+**Four steps (Windows)**:
+
+1. **Find your PC's LAN IP**—run in PowerShell, note the `192.168.x.x` (home subnet):
+   ```powershell
+   Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } | ForEach-Object { "$($_.InterfaceAlias): $($_.IPv4Address.IPAddress)" }
+   ```
+2. **Allow port 4317 through the firewall** (one-time, needs an **Admin** PowerShell; use the interface name from step 1, e.g. `Ethernet` or `Wi-Fi`):
+   ```powershell
+   Set-NetConnectionProfile -InterfaceAlias "YourAdapterName" -NetworkCategory Private
+   New-NetFirewallRule -DisplayName "TURZX HUD 4317" -Direction Inbound -LocalPort 4317 -Protocol TCP -Action Allow -Profile Private
+   ```
+   This marks your home network "Private" and only opens 4317 there, so it stays closed on public networks. To remove later: `Remove-NetFirewallRule -DisplayName "TURZX HUD 4317"`.
+3. **Connect the device to the same WiFi** (same router as the PC) and open `http://<PC-IP>:4317/?lang=en` (drop `?lang=en` for Chinese).
+4. **Fullscreen + stay awake**: use the browser's "Add to Home Screen" or fullscreen mode; the HUD has a built-in **Wake Lock** to keep the screen on automatically—no need to change system sleep settings (modern browser required).
+
+**Supported devices**:
+
+| Device | Supported |
+|---|---|
+| Old Android tablet / phone | ✅ Best—common and reliable |
+| Old iPad / iPhone | ✅ iOS 11+ (needs ES modules / SSE, ~2017 or later) |
+| Kindle Fire tablet | ✅ It's essentially an Android tablet |
+| **E-ink Kindle** (e-reader) | ❌ Browser too old for SSE, E-ink refresh too slow for live animation, grayscale can't show the neon palette |
+
+> ⚠️ **Security**: once allowed, **any device on the same WiFi** can open this address and see your HUD (project names, tool calls, cost, etc.). Fine on a home network; don't allow it on public / office networks.
+
 ## 🏗️ Architecture
 
 One-way data flow, three stages; the HUD is always the "read-only tail":

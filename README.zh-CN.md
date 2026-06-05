@@ -100,6 +100,36 @@ HUD 画布按 1920×480 设计，但会**自动等比缩放居中**铺进你副�
 - **多副屏时选对屏**：把 `scripts/hud-config.json` 的 `targetScreen` 改成你副屏的 `width` / `height`，`pickScreen` 会精确匹配那块屏（匹配不到则回退第一块非主屏）。
 - **想消除黑边、为自己比例精调**（进阶）：改 `public/hud.css` 里 `.hud{width/height}` 的画布尺寸，并相应调整内部三栏宽度与字号——这是为新长宽比重排布局，需要一些 CSS。
 
+## 📱 用旧手机 / 平板当 HUD（局域网模式）
+
+不想买副屏？**家里任何一台旧安卓 / iOS 平板或手机**，连同一个 WiFi 就能当 HUD——废物利用、零成本。原理：采集器 `:4317` 同时监听局域网，旧设备用自带浏览器访问即可（区别于 TURZX 副屏走 HDMI/USB 当电脑显示器）。
+
+**四步上手（Windows）**：
+
+1. **查电脑局域网 IP**——PowerShell 跑，记下那个 `192.168.x.x`（家用网段）：
+   ```powershell
+   Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } | ForEach-Object { "$($_.InterfaceAlias): $($_.IPv4Address.IPAddress)" }
+   ```
+2. **放行防火墙 4317**（首次，需**管理员** PowerShell；网卡名填上一步输出里的，如 `以太网` 或 `WLAN`）：
+   ```powershell
+   Set-NetConnectionProfile -InterfaceAlias "你的网卡名" -NetworkCategory Private
+   New-NetFirewallRule -DisplayName "TURZX HUD 4317" -Direction Inbound -LocalPort 4317 -Protocol TCP -Action Allow -Profile Private
+   ```
+   把家庭网设为「专用」并只在专用网放行 4317，外出接公用网时不暴露。不用了删：`Remove-NetFirewallRule -DisplayName "TURZX HUD 4317"`。
+3. **手机连同一个 WiFi**（和电脑同一路由器），浏览器打开 `http://<电脑IP>:4317/?lang=en`（要中文就去掉 `?lang=en`）。
+4. **全屏 + 常亮**：浏览器「添加到主屏幕」或全屏铺满；HUD 已内置 **Wake Lock 自动防熄屏**，无需改系统息屏设置（需较新浏览器）。
+
+**支持的设备**：
+
+| 设备 | 支持 |
+|---|---|
+| 旧安卓 平板 / 手机 | ✅ 最佳，普及又稳 |
+| 旧 iPad / iPhone | ✅ iOS 11+（需支持 ES 模块 / SSE，约 2017 年后） |
+| Kindle Fire 平板 | ✅ 本质是安卓平板 |
+| **墨水屏 Kindle**（电子书阅读器） | ❌ 浏览器太旧不支持 SSE、E-ink 刷新慢无法显示实时动画、黑白屏看不清霓虹配色 |
+
+> ⚠️ **安全**：放行后，**同一 WiFi 下任何设备**打开这个地址都能看到你的 HUD（项目名、工具调用、花费等）。家庭 WiFi 一般无妨；公共 / 办公网络请勿放行。
+
 ## 🏗️ 架构
 
 单向数据流，三段，HUD 永远是「只读末端」：
