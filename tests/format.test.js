@@ -88,6 +88,23 @@ test('effortClass 三档分色、空与未知不上色', () => {
   assert.equal(effortClass('weird'), '');
 });
 
+test('effortLabel ultracode 时显 ULTRA、覆盖等级与空值', () => {
+  assert.equal(effortLabel('high', true), 'ULTRA');
+  assert.equal(effortLabel('max', true), 'ULTRA');
+  assert.equal(effortLabel(null, true), 'ULTRA');
+  // 非 ultra 维持原行为
+  assert.equal(effortLabel('high', false), 'HIGH');
+  assert.equal(effortLabel('high'), 'HIGH');
+});
+
+test('effortClass ultracode 时用 e-ultra、覆盖等级', () => {
+  assert.equal(effortClass('high', true), 'e-ultra');
+  assert.equal(effortClass('max', true), 'e-ultra');
+  assert.equal(effortClass(null, true), 'e-ultra');
+  // 非 ultra 维持原行为
+  assert.equal(effortClass('high', false), 'e-hi');
+});
+
 test('workflow 标量：running/done/null 与边界', () => {
   const run = { status: 'running', doneAgents: 3, totalAgents: 8, phaseTotal: 4 };
   const done = { status: 'done', doneAgents: 8, totalAgents: 8, phaseTotal: null };

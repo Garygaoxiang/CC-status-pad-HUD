@@ -146,6 +146,19 @@ test('renderBanner 无 effort 不渲染 effort chip', () => {
   assert.doesNotMatch(html, /⚡/);
 });
 
+test('renderBanner ultracode 时渲染 ULTRA chip 覆盖等级', () => {
+  const html = renderBanner({ sessions: [] }, { effort: 'high', ultra: true });
+  assert.match(html, /class="chip e-ultra"/);
+  assert.match(html, /⚡ ULTRA/);
+  assert.doesNotMatch(html, /⚡ HIGH/);
+});
+
+test('renderBanner ultra 但无 effort 仍渲染 ULTRA chip', () => {
+  const html = renderBanner({ sessions: [] }, { effort: null, ultra: true });
+  assert.match(html, /class="chip e-ultra"/);
+  assert.match(html, /⚡ ULTRA/);
+});
+
 test('renderBanner 含 workflow chip（running）', () => {
   const html = renderBanner({ sessions: [] },
     { workflow: { name: 'rev', status: 'running', doneAgents: 3, totalAgents: 8, phaseTotal: 4 } });

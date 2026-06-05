@@ -15,10 +15,10 @@ function chip(text, cls = '') {
   return text ? `<span class="${cls ? `chip ${cls}` : 'chip'}">${esc(text)}</span>` : '';
 }
 
-function effortChip(level) {
-  const label = effortLabel(level);
+function effortChip(level, ultra) {
+  const label = effortLabel(level, ultra);
   if (!label) return '';
-  return `<span class="chip ${effortClass(level)}">⚡ ${esc(label)}</span>`;
+  return `<span class="chip ${effortClass(level, ultra)}">⚡ ${esc(label)}</span>`;
 }
 
 // banner workflow chip：照 effort chip 先例，无 workflow 返回空串
@@ -52,7 +52,7 @@ export function renderBanner(snapshot, session) {
   const sessions = Array.isArray((snapshot || {}).sessions) ? snapshot.sessions : [];
   const chips = [
     chip(s.model && String(s.model).toUpperCase(), 'k'),
-    effortChip(s.effort),
+    effortChip(s.effort, s.ultra),
     workflowChip(s.workflow),
     chip(s.plan, 'm'),
     chip(s.projectName),

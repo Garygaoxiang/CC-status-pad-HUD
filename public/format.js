@@ -73,12 +73,14 @@ export function duration(ms) {
 
 const EFFORT_LABEL = { low: 'LOW', medium: 'MED', high: 'HIGH', xhigh: 'XHIGH', max: 'MAX' };
 
-export function effortLabel(level) {
+export function effortLabel(level, ultra) {
+  if (ultra) return 'ULTRA'; // ultracode 覆盖等级，含 effort 为 null 时也显示
   if (!level) return '';
   return EFFORT_LABEL[level] || String(level).toUpperCase();
 }
 
-export function effortClass(level) {
+export function effortClass(level, ultra) {
+  if (ultra) return 'e-ultra'; // ultracode 专属配色，覆盖等级
   if (level === 'high') return 'e-hi';
   if (level === 'xhigh' || level === 'max') return 'e-max';
   if (level === 'low' || level === 'medium') return 'e-lo';
