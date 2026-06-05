@@ -4,6 +4,7 @@ import {
   esc, statusText, clock, toolColor, barWidth, countdown, taskProgress, duration,
   effortLabel, effortClass,
   workflowChipText, workflowClass, workflowPct, workflowPhaseText,
+  fitScale,
 } from '../public/format.js';
 
 test('esc 转义 HTML 特殊字符', () => {
@@ -126,4 +127,15 @@ test('workflow 标量：running/done/null 与边界', () => {
   assert.equal(workflowPct({ status: 'running', doneAgents: 0, totalAgents: 0 }), 0);
   assert.equal(workflowPhaseText(run), 'phase ·/4');
   assert.equal(workflowPhaseText(done), '');
+});
+
+test('fitScale 取宽/高较小比、保宽高比、非法回退 1', () => {
+  assert.equal(fitScale(1920, 480), 1);            // 原生尺寸
+  assert.equal(fitScale(960, 240), 0.5);           // 等比缩小
+  assert.equal(fitScale(3840, 960), 2);            // 等比放大
+  assert.equal(fitScale(1920, 515), 1);            // 略高：受宽限制
+  assert.equal(fitScale(2560, 480), 1);            // 略宽：受高限制
+  assert.equal(fitScale(800, 480), 800 / 1920);    // 窄屏：受宽限制
+  assert.equal(fitScale(0, 0), 1);                 // 防御：非法回退 1
+  assert.equal(fitScale(1000, 1000, 500, 500), 2); // 自定义基准
 });

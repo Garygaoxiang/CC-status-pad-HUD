@@ -109,3 +109,10 @@ export function workflowPct(wf) {
 export function workflowPhaseText(wf) {
   return (wf && wf.phaseTotal != null) ? `phase ·/${wf.phaseTotal}` : '';
 }
+
+// HUD 画布等比缩放比例：把 baseW×baseH 设计稿等比铺进实际窗口，取宽/高较小比、保宽高比、不裁切。
+// 非有限或非正（异常窗口尺寸）时回退 1，绝不返回 0/NaN 拖垮渲染。
+export function fitScale(winW, winH, baseW = 1920, baseH = 480) {
+  const s = Math.min(Number(winW) / baseW, Number(winH) / baseH);
+  return Number.isFinite(s) && s > 0 ? s : 1;
+}
