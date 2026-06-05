@@ -7,7 +7,7 @@ import {
 } from './state.js';
 import { readToken, fetchUsage, readProxy } from './usage.js';
 import { collectWorkflow, sessionDirFromTranscript } from './workflow.js';
-import { lastUsageFromTranscript, parseContextWindow } from './transcript.js';
+import { lastUsageFromTranscript, parseContextWindow, lastEffortMode } from './transcript.js';
 
 const TRANSCRIPT_POLL_MS = 5_000;
 const WF_POLL_MS = 8_000;
@@ -120,12 +120,18 @@ export function createCollector() {
       if (!sess.transcriptPath) continue;
       try {
         const text = await readFile(sess.transcriptPath, 'utf8');
+        const patch = {};
         const used = lastUsageFromTranscript(text);
-        if (used == null) continue;
-        const win = parseContextWindow(sess.model);
-        const pct = Math.max(0, Math.min(100, Math.round((used / win) * 100)));
-        if (pct !== sess.contextPct) {
-          sessions.set(sess.sessionId, { ...sess, contextPct: pct });
+        if (used != null) {
+          const win = parseContextWindow(sess.model);
+          const pct = Math.max(0, Math.min(100, Math.round((used / win) * 100)));
+          if (pct !== sess.contextPct) patch.contextPct = pct;
+        }
+        // ultracode 检测：statusline 只报 xhigh，靠 transcript 最末 effort 命令判定
+        const ultra = lastEffortMode(text) === 'ultracode';
+        if (ultra !== sess.ultra) patch.ultra = ultra;
+        if (Object.keys(patch).length) {
+          sessions.set(sess.sessionId, { ...sess, ...patch });
           dirty = true;
         }
       } catch { /* 文件读不到就跳过这一轮 */ }

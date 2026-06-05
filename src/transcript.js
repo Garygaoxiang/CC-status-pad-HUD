@@ -35,3 +35,22 @@ export function lastUsageFromTranscript(text) {
   }
   return null;
 }
+
+// 从 JSONL 文本里取最末一次 "/effort <mode>" 命令的回显，返回设置的 effort 模式
+// （如 "ultracode" / "high"），无则 null。statusline 不区分 ultracode 与 xhigh，
+// 这是唯一可靠数据源。只认 message.content 为字符串的真命令回显——content 为数组
+// （tool_result 等）一律跳过，避免工具输出里偶然出现的同名文本造成误判。
+export function lastEffortMode(text) {
+  const lines = String(text || '').split('\n');
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const ln = lines[i].trim();
+    if (!ln) continue;
+    let j;
+    try { j = JSON.parse(ln); } catch { continue; }
+    const c = j && j.message && j.message.content;
+    if (typeof c !== 'string') continue;
+    const m = c.match(/^<local-command-stdout>Set effort level to (\w+)/);
+    if (m) return m[1];
+  }
+  return null;
+}

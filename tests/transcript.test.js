@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseContextWindow, lastUsageFromTranscript } from '../src/transcript.js';
+import { parseContextWindow, lastUsageFromTranscript, lastEffortMode } from '../src/transcript.js';
 
 test('parseContextWindow 识别 1M', () => {
   assert.equal(parseContextWindow('Opus 4.7 (1M context)'), 1_000_000);
@@ -48,4 +48,29 @@ test('lastUsageFromTranscript 跳过坏行、容忍缺字段', () => {
   ].join('\n');
   // 仅 input_tokens=5，其他字段缺失视作 0
   assert.equal(lastUsageFromTranscript(jsonl), 5);
+});
+
+const sl = (mode) => JSON.stringify({ type: 'user', message: { role: 'user',
+  content: `<local-command-stdout>Set effort level to ${mode} (this session only): xhigh + dynamic workflow orchestration</local-command-stdout>` } });
+
+test('lastEffortMode 取最末一次 effort 设置命令的模式', () => {
+  const jsonl = [sl('high'), JSON.stringify({ type: 'assistant', message: {} }), sl('ultracode')].join('\n');
+  assert.equal(lastEffortMode(jsonl), 'ultracode');
+});
+
+test('lastEffortMode 切回别的模式后返回新模式', () => {
+  assert.equal(lastEffortMode([sl('ultracode'), sl('high')].join('\n')), 'high');
+});
+
+test('lastEffortMode 忽略 tool_result 数组里的同名文本(防污染)', () => {
+  // 工具输出把 "Set effort level to ultracode" 写进了 transcript（content 是数组），不应被误判
+  const polluted = JSON.stringify({ type: 'user', message: { role: 'user',
+    content: [{ type: 'tool_result', content: 'echo Set effort level to ultracode 这是工具输出污染' }] } });
+  assert.equal(lastEffortMode(polluted), null);
+});
+
+test('lastEffortMode 无 effort 命令返回 null', () => {
+  assert.equal(lastEffortMode(JSON.stringify({ type: 'user', message: { role: 'user', content: 'hi' } })), null);
+  assert.equal(lastEffortMode(''), null);
+  assert.equal(lastEffortMode(null), null);
 });

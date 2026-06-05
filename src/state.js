@@ -11,7 +11,7 @@ const truncate = (str, n) => {
 export function createSession(sessionId) {
   return {
     sessionId, status: 'idle', currentTool: null,
-    model: null, effort: null, plan: null, cwd: null, projectName: null, branch: null,
+    model: null, effort: null, ultra: false, plan: null, cwd: null, projectName: null, branch: null,
     timeline: [], tasks: [], toolCounts: {},
     contextPct: 0, linesAdded: 0, linesRemoved: 0, filesChanged: 0,
     costUsd: 0, durationMs: 0, lastSeen: 0,
