@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dict, LABELS } from '../public/i18n.js';
+import { dict, LABELS, pickLang } from '../public/i18n.js';
 
 test('dict 返回对应语言，未知 / 空回退 zh', () => {
   assert.equal(dict('en'), LABELS.en);
@@ -33,4 +33,14 @@ test('关键标题字符串存在且非空', () => {
       assert.ok(L[k].length > 0, `${lang}.${k} 不应为空`);
     }
   }
+});
+
+test('pickLang 从 URL query 解析显示语言，未知/缺省回退 zh', () => {
+  assert.equal(pickLang('?lang=en'), 'en');
+  assert.equal(pickLang('lang=en'), 'en');   // 无前导 ?
+  assert.equal(pickLang('?lang=zh'), 'zh');
+  assert.equal(pickLang('?lang=fr'), 'zh');  // 未知语言回退
+  assert.equal(pickLang('?x=1'), 'zh');      // 无 lang 参数
+  assert.equal(pickLang(''), 'zh');
+  assert.equal(pickLang(), 'zh');            // undefined
 });

@@ -52,3 +52,10 @@ export const LABELS = {
 export function dict(lang) {
   return LABELS[lang] || LABELS.zh;
 }
+
+// 从 URL query string（如 location.search）解析显示语言。
+// 只认字典已有的语言；未知 / 缺省回退 zh，保证返回值恒为合法语言码。
+export function pickLang(search) {
+  const v = new URLSearchParams(search || '').get('lang');
+  return LABELS[v] ? v : 'zh';
+}
