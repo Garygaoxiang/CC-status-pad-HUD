@@ -72,16 +72,6 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   .ctx{width:220px;flex:none}
   .ctx .top{display:flex;justify-content:space-between;font-size:18px;color:#8499b8;margin-bottom:6px;letter-spacing:1.5px}
   .ctx .top b{color:#27d3f5;text-shadow:0 0 7px #27d3f5}
-  .sess{display:flex;gap:6px;flex:none}
-  .sess span{width:36px;height:38px;font-size:20px;display:flex;align-items:center;justify-content:center;
-    background:#0d1f3e;border:1px solid #1f3e6b;color:#6b82a3;transition:transform .2s;
-    clip-path:polygon(50% 0,100% 28%,100% 72%,50% 100%,0 72%,0 28%)}
-  /* 编号块按各会话 status 上色：working/running 青、idle(完成待命) 绿、waiting(需决策) 红 */
-  .sess span.s-working,.sess span.s-running{background:#27d3f5;border-color:#27d3f5;color:#04101f}
-  .sess span.s-idle{background:#3ff58f;border-color:#3ff58f;color:#04101f}
-  .sess span.s-waiting{background:#ff2d6e;border-color:#ff2d6e;color:#fff;animation:scell .85s steps(1) infinite}
-  /* on = 当前 HUD 正显示的会话：放大 + 白色光晕描边 */
-  .sess span.on{font-weight:800;transform:scale(1.1);filter:drop-shadow(0 0 6px rgba(255,255,255,.92))}
 
   .cols{flex:1;display:flex;gap:10px;min-height:0}
   .tl{margin-top:11px;display:flex;flex-direction:column;gap:2px}
@@ -118,6 +108,14 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   .grow{margin-left:auto}
   .live{display:flex;align-items:center;gap:7px;font-size:18px;color:#27d3f5;font-weight:800;letter-spacing:2px}
   .live i{width:9px;height:9px;border-radius:50%;background:#27d3f5;animation:pulse 1.8s infinite}
+  /* footer 会话标签：编号+项目名行内药丸；status 配色（照 chip 风格），当前会话 on 白晕高亮 */
+  .fsess{display:flex;align-items:center;gap:8px;padding:0 16px;flex-wrap:wrap;overflow:hidden}
+  .fsess span{font-size:18px;padding:4px 11px;color:#9fb8d6;background:#0d1f3e;border:1px solid #1f3e6b;white-space:nowrap;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+  .fsess span.s-working,.fsess span.s-running{border-color:#27d3f5;color:#8fe9fb;background:#072233}
+  .fsess span.s-idle{border-color:#3ff58f;color:#9fffce;background:#05231a}
+  .fsess span.s-waiting{border-color:#ff2d6e;color:#ffb3cd;background:#2a0a16;animation:scell .85s steps(1) infinite}
+  .fsess span.on{font-weight:800;filter:drop-shadow(0 0 6px rgba(255,255,255,.85));outline:1px solid rgba(255,255,255,.8);outline-offset:1px}
 .col-tl{width:40%;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 38px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 38px),transparent)}
 .col-mid{width:33%;display:flex;flex-direction:column;overflow:hidden}
 .col-usage{width:27%}
