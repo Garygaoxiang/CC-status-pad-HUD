@@ -54,6 +54,13 @@ test('countdown 把重置时间转成倒计时', () => {
   assert.equal(countdown(null, now), '—');
 });
 
+test('countdown 到期文案可由 nowWord 覆盖（i18n）', () => {
+  const now = Date.now();
+  assert.equal(countdown(new Date(now - 1000).toISOString(), now, 'now'), 'now');
+  // 未到期不受 nowWord 影响
+  assert.equal(countdown(new Date(now + 3 * 60000).toISOString(), now, 'now'), '3m');
+});
+
 test('taskProgress 统计完成度', () => {
   assert.deepEqual(
     taskProgress([{ status: 'completed' }, { status: 'pending' }, { status: 'completed' }]),

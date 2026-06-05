@@ -41,11 +41,11 @@ export function barWidth(pct) {
   return `${Math.max(0, Math.min(100, n))}%`;
 }
 
-export function countdown(resetsAt, now = Date.now()) {
+export function countdown(resetsAt, now = Date.now(), nowWord = '现在') {
   if (!resetsAt) return '—';
   const ms = new Date(resetsAt).getTime() - now;
   if (!Number.isFinite(ms)) return '—';
-  if (ms <= 0) return '现在';
+  if (ms <= 0) return nowWord;
   const m = Math.floor(ms / 60000);
   const p = (n) => String(n).padStart(2, '0');
   const d = Math.floor(m / 1440);

@@ -4,6 +4,7 @@ import {
   effortLabel, effortClass,
   workflowChipText, workflowClass, workflowPct, workflowPhaseText,
 } from './format.js';
+import { dict } from './i18n.js';
 
 export function focusSession(snapshot) {
   const s = snapshot || {};
@@ -68,8 +69,9 @@ export function renderBanner(snapshot, session) {
 <div class="chips">${chips}</div>`;
 }
 
-export function renderTimeline(session) {
+export function renderTimeline(session, lang) {
   const s = session || {};
+  const L = dict(lang);
   const rows = [];
   if (s.currentTool) {
     rows.push(`<div class="ev act"><span class="d"></span>`
@@ -84,13 +86,14 @@ export function renderTimeline(session) {
       + `<span class="x">${esc(e.label)}</span></div>`);
   }
   if (!rows.length) {
-    rows.push('<div class="ev"><span class="x" style="color:#516a90">等待事件…</span></div>');
+    rows.push(`<div class="ev"><span class="x" style="color:#516a90">${L.timelineEmpty}</span></div>`);
   }
   return workflowProgress(s.workflow) + rows.join('');
 }
 
-export function renderTasks(session) {
+export function renderTasks(session, lang) {
   const tasks = Array.isArray((session || {}).tasks) ? session.tasks : [];
+  const L = dict(lang);
   const { done, total, pct } = taskProgress(tasks);
   const items = tasks.map((t) => {
     const st = t && t.status;
@@ -99,49 +102,52 @@ export function renderTasks(session) {
     return `${mark} ${esc(t && t.subject)}`;
   }).join('&nbsp; ');
   return `<div class="sec" style="margin-top:0">
-  <div class="h"><span class="lbl">任务进度</span><span class="n">${done} / ${total}</span></div>
+  <div class="h"><span class="lbl">${L.tasksTitle}</span><span class="n">${done} / ${total}</span></div>
   <div class="bar" style="margin-top:8px"><i style="width:${barWidth(pct)};background:linear-gradient(90deg,#27d3f5,#3ff58f)"><span class="sh"></span></i></div>
-  <div class="tk mono">${items || '<span style="color:#516a90">暂无任务</span>'}</div>
+  <div class="tk mono">${items || `<span style="color:#516a90">${L.tasksEmpty}</span>`}</div>
 </div>`;
 }
 
-export function renderToolCounts(session) {
+export function renderToolCounts(session, lang) {
   const counts = (session || {}).toolCounts || {};
+  const L = dict(lang);
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   const body = entries.length
     ? entries.map(([k, v]) => `${esc(k)} <b>×${Number(v) || 0}</b>`).join(' &nbsp; ')
-    : '<span style="color:#516a90">暂无调用</span>';
+    : `<span style="color:#516a90">${L.toolsEmpty}</span>`;
   return `<div class="sec">
-  <span class="lbl">本会话工具调用</span>
+  <span class="lbl">${L.toolsTitle}</span>
   <div class="toolc mono">${body}</div>
 </div>`;
 }
 
-export function renderChanges(session) {
+export function renderChanges(session, lang) {
   const s = session || {};
+  const L = dict(lang);
   const cost = `$${(Number(s.costUsd) || 0).toFixed(2)}`;
   return `<div class="sec">
-  <span class="lbl">代码改动 · 花费</span>
-  <div class="kv mono"><span style="color:#3ff58f">+${Number(s.linesAdded) || 0}</span><span style="color:#ff5ca3">−${Number(s.linesRemoved) || 0}</span><span class="m">${Number(s.filesChanged) || 0} 个文件</span></div>
+  <span class="lbl">${L.changesTitle}</span>
+  <div class="kv mono"><span style="color:#3ff58f">+${Number(s.linesAdded) || 0}</span><span style="color:#ff5ca3">−${Number(s.linesRemoved) || 0}</span><span class="m">${L.files(Number(s.filesChanged) || 0)}</span></div>
   <div class="kv mono"><span>${cost}</span><span class="m">${duration(s.durationMs)}</span></div>
 </div>`;
 }
 
-function gauge(name, pct, resetAt, grad, accent, now) {
+function gauge(name, pct, resetAt, grad, accent, now, L) {
   const known = Number.isFinite(pct);
   return `<div class="gz">
   <div class="g1"><span class="nm">${esc(name)}</span><span class="pc" style="color:${known ? accent : '#516a90'}">${known ? pct + '%' : '—'}</span></div>
   <div class="bar"><i style="width:${barWidth(known ? pct : 0)};background:${grad}"><span class="sh"></span></i></div>
-  <div class="rs mono">${known && resetAt ? '⟳ ' + countdown(resetAt, now) + ' 后重置' : '同步中…'}</div>
+  <div class="rs mono">${known && resetAt ? L.reset(countdown(resetAt, now, L.cdNow)) : L.syncing}</div>
 </div>`;
 }
 
-export function renderUsage(snapshot, now = Date.now()) {
+export function renderUsage(snapshot, now = Date.now(), lang) {
   const u = (snapshot || {}).usage || {};
-  return `<div class="lbl">Account Usage</div>
-${gauge('5 小时窗口', u.fiveHour, u.fiveHourResetAt, 'linear-gradient(90deg,#27d3f5,#3ff58f)', '#27d3f5', now)}
-${gauge('7 天窗口', u.sevenDay, u.sevenDayResetAt, 'linear-gradient(90deg,#ff2d8e,#ff8ac0)', '#ff5ca3', now)}
-<div class="rs mono" style="margin-top:17px">SYNC 每 5min · /api/oauth/usage</div>`;
+  const L = dict(lang);
+  return `<div class="lbl">${L.usageTitle}</div>
+${gauge(L.usage5h, u.fiveHour, u.fiveHourResetAt, 'linear-gradient(90deg,#27d3f5,#3ff58f)', '#27d3f5', now, L)}
+${gauge(L.usage7d, u.sevenDay, u.sevenDayResetAt, 'linear-gradient(90deg,#ff2d8e,#ff8ac0)', '#ff5ca3', now, L)}
+<div class="rs mono" style="margin-top:17px">${L.syncNote}</div>`;
 }
 
 // footer 会话标签：每个会话一个 span，编号+项目名；status 配色 + 当前会话 on 描边
@@ -156,18 +162,19 @@ function footerSessions(sessions, currentId) {
   }).join('');
 }
 
-export function renderFooter(snapshot, session, connected) {
+export function renderFooter(snapshot, session, connected, lang) {
   const s = session || {};
+  const L = dict(lang);
   const sessions = Array.isArray((snapshot || {}).sessions) ? snapshot.sessions : [];
   const count = sessions.length;
   const link = connected
     ? '<span class="v cy">SSE ●</span>'
-    : '<span class="v" style="color:#ff5ca3">SSE ○ 重连中</span>';
+    : `<span class="v" style="color:#ff5ca3">${L.linkReconnecting}</span>`;
   // 会话标签夹在「会话时长」与「活动会话」之间；grow 留在「活动会话」撑开两者空隙。
   return `<div class="rd"><span class="live"><i></i>LIVE</span></div>
-<div class="rd"><span class="k">项目</span><span class="v">${esc(s.projectName || '—')}</span></div>
-<div class="rd"><span class="k">会话时长</span><span class="v cy">${duration(s.durationMs)}</span></div>
+<div class="rd"><span class="k">${L.fProject}</span><span class="v">${esc(s.projectName || '—')}</span></div>
+<div class="rd"><span class="k">${L.fDuration}</span><span class="v cy">${duration(s.durationMs)}</span></div>
 <div class="fsess">${footerSessions(sessions, s.sessionId)}</div>
-<div class="rd grow"><span class="k">活动会话</span><span class="v">${count}</span></div>
-<div class="rd"><span class="k">连接</span>${link}</div>`;
+<div class="rd grow"><span class="k">${L.fSessions}</span><span class="v">${count}</span></div>
+<div class="rd"><span class="k">${L.fLink}</span>${link}</div>`;
 }
