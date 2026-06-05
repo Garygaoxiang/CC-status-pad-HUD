@@ -4,6 +4,7 @@ import {
   renderToolCounts, renderChanges, renderUsage, renderFooter,
 } from './render.js';
 import { dict, pickLang } from './i18n.js';
+import { fitScale } from './format.js';
 
 const $ = (id) => document.getElementById(id);
 const lang = pickLang(location.search);   // URL ?lang=en 选语言，缺省 zh
@@ -13,6 +14,13 @@ let snapshot = { focusId: null, sessions: [], usage: null, ts: 0 };
 // 语言运行期不变：初始化设好 <html lang> 与静态时间线表头（render 层不渲染表头）
 document.documentElement.lang = lang;
 $('tl-header').textContent = dict(lang).timelineHeader;
+
+// 等比缩放：把固定 1920×480 画布缩放铺进实际副屏窗口（取宽/高较小比、保宽高比，见 format.fitScale）。
+function fitHud() {
+  document.documentElement.style.setProperty('--hud-scale', fitScale(window.innerWidth, window.innerHeight));
+}
+window.addEventListener('resize', fitHud);
+fitHud();
 
 function paint() {
   const session = focusSession(snapshot);
