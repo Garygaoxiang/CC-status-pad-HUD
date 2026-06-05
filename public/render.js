@@ -49,7 +49,6 @@ function bannerStatus(session) {
 export function renderBanner(snapshot, session) {
   const s = session || {};
   const pct = Math.round(Number(s.contextPct) || 0);
-  const sessions = Array.isArray((snapshot || {}).sessions) ? snapshot.sessions : [];
   const chips = [
     chip(s.model && String(s.model).toUpperCase(), 'k'),
     effortChip(s.effort, s.ultra),
@@ -58,15 +57,7 @@ export function renderBanner(snapshot, session) {
     chip(s.projectName),
     s.branch ? `<span class="chip mono">⎇ ${esc(s.branch)}</span>` : '',
   ].join('');
-  // 编号块：每个会话一个，class 含 status（s-idle/s-working/s-running/s-waiting）
-  // 与 on（当前 HUD 正显示的会话）。颜色由 hud.css 按 status 区分。
-  const sess = sessions.map((x, i) => {
-    const cls = [
-      x && x.status ? `s-${x.status}` : '',
-      x && x.sessionId === s.sessionId ? 'on' : '',
-    ].filter(Boolean).join(' ');
-    return `<span class="${cls}">${i + 1}</span>`;
-  }).join('');
+  // 会话编号块已移至 footer（见 footerSessions / renderFooter）。
   return `<div class="hex">CC</div>
 <div class="stdot"></div>
 <div class="sttxt">${bannerStatus(s)}</div>
@@ -74,8 +65,7 @@ export function renderBanner(snapshot, session) {
   <div class="top"><span>CONTEXT</span><b>${pct}%</b></div>
   <div class="bar"><i style="width:${barWidth(pct)};background:linear-gradient(90deg,#27d3f5,#3ff58f)"><span class="sh"></span></i></div>
 </div>
-<div class="chips">${chips}</div>
-<div class="sess">${sess}</div>`;
+<div class="chips">${chips}</div>`;
 }
 
 export function renderTimeline(session) {
@@ -154,15 +144,30 @@ ${gauge('7 天窗口', u.sevenDay, u.sevenDayResetAt, 'linear-gradient(90deg,#ff
 <div class="rs mono" style="margin-top:17px">SYNC 每 5min · /api/oauth/usage</div>`;
 }
 
+// footer 会话标签：每个会话一个 span，编号+项目名；status 配色 + 当前会话 on 描边
+function footerSessions(sessions, currentId) {
+  return sessions.map((x, i) => {
+    const cls = [
+      x && x.status ? `s-${x.status}` : '',
+      x && x.sessionId === currentId ? 'on' : '',
+    ].filter(Boolean).join(' ');
+    const name = x && x.projectName ? ` ${esc(x.projectName)}` : '';
+    return `<span class="${cls}">${i + 1}${name}</span>`;
+  }).join('');
+}
+
 export function renderFooter(snapshot, session, connected) {
   const s = session || {};
-  const count = Array.isArray((snapshot || {}).sessions) ? snapshot.sessions.length : 0;
+  const sessions = Array.isArray((snapshot || {}).sessions) ? snapshot.sessions : [];
+  const count = sessions.length;
   const link = connected
     ? '<span class="v cy">SSE ●</span>'
     : '<span class="v" style="color:#ff5ca3">SSE ○ 重连中</span>';
+  // 会话标签夹在「会话时长」与「活动会话」之间；grow 留在「活动会话」撑开两者空隙。
   return `<div class="rd"><span class="live"><i></i>LIVE</span></div>
 <div class="rd"><span class="k">项目</span><span class="v">${esc(s.projectName || '—')}</span></div>
 <div class="rd"><span class="k">会话时长</span><span class="v cy">${duration(s.durationMs)}</span></div>
+<div class="fsess">${footerSessions(sessions, s.sessionId)}</div>
 <div class="rd grow"><span class="k">活动会话</span><span class="v">${count}</span></div>
 <div class="rd"><span class="k">连接</span>${link}</div>`;
 }

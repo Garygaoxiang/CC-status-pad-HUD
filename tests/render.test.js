@@ -24,29 +24,14 @@ test('focusSession 取 focusId 对应会话，回退首个', () => {
   assert.equal(focusSession({}), null);
 });
 
-test('renderBanner 含状态、芯片、会话切换', () => {
+test('renderBanner 含状态与芯片，不再渲染会话编号块', () => {
   const html = renderBanner(SNAP, SNAP.sessions[0]);
   assert.match(html, /RUNNING/);
   assert.match(html, /· BASH/);
   assert.match(html, /OPUS 4\.7/);
   assert.match(html, /class="chip m"/);
   assert.match(html, /⎇ main/);
-  assert.match(html, /<span class="s-running on">1<\/span>/);
-});
-
-test('renderBanner 编号块按会话状态上色', () => {
-  const snap = {
-    focusId: 'a',
-    sessions: [
-      { sessionId: 'a', status: 'running' },
-      { sessionId: 'b', status: 'idle' },
-      { sessionId: 'c', status: 'waiting' },
-    ],
-  };
-  const html = renderBanner(snap, snap.sessions[0]);
-  assert.match(html, /<span class="s-running on">1<\/span>/);  // 焦点会话：状态类 + on
-  assert.match(html, /<span class="s-idle">2<\/span>/);        // 完成 → 绿
-  assert.match(html, /<span class="s-waiting">3<\/span>/);     // 需决策 → 红
+  assert.doesNotMatch(html, /class="sess"/);  // 会话编号块已移至 footer
 });
 
 test('renderBanner 转义注入字符', () => {
@@ -115,6 +100,35 @@ test('renderUsage 无用量显示同步中', () => {
 test('renderFooter 反映连接状态', () => {
   assert.match(renderFooter({ sessions: [{}, {}] }, { projectName: 'p' }, true), /SSE ●/);
   assert.match(renderFooter({ sessions: [] }, {}, false), /重连中/);
+});
+
+test('renderFooter 渲染会话标签：编号+项目名、状态色、当前 on', () => {
+  const html = renderFooter(SNAP, SNAP.sessions[0], true);
+  assert.match(html, /class="fsess"/);
+  assert.match(html, /<span class="s-running on">1 proj-api<\/span>/);  // 焦点会话：状态类 + on + 项目名
+  assert.match(html, /<span class="s-idle">2<\/span>/);                // 无项目名只显编号
+});
+
+test('renderFooter 会话标签按状态上色', () => {
+  const snap = {
+    focusId: 'a',
+    sessions: [
+      { sessionId: 'a', status: 'running', projectName: 'p1' },
+      { sessionId: 'b', status: 'idle', projectName: 'p2' },
+      { sessionId: 'c', status: 'waiting', projectName: 'p3' },
+    ],
+  };
+  const html = renderFooter(snap, snap.sessions[0], true);
+  assert.match(html, /<span class="s-running on">1 p1<\/span>/);
+  assert.match(html, /<span class="s-idle">2 p2<\/span>/);
+  assert.match(html, /<span class="s-waiting">3 p3<\/span>/);
+});
+
+test('renderFooter 会话标签转义项目名注入', () => {
+  const snap = { focusId: 'a', sessions: [{ sessionId: 'a', status: 'idle', projectName: '<img>' }] };
+  const html = renderFooter(snap, snap.sessions[0], true);
+  assert.doesNotMatch(html, /<img>/);
+  assert.match(html, /&lt;img&gt;/);
 });
 
 test('renderToolCounts 转义工具名注入', () => {
