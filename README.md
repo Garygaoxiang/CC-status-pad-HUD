@@ -6,7 +6,7 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-![TURZX Coding HUD](docs/images/hero.png)
+![TURZX Coding HUD](docs/images/hero-en.png)
 
 > An 8.8″ secondary screen (1920×480) showing, in real time, what Claude Code is doing, how far it has gotten, and how much quota is left.
 > When a session enters "waiting for approval / idle reminder", the **whole screen lights up**—so you never miss the AI sitting there waiting on you.
@@ -41,21 +41,29 @@ When coding with Claude Code, do you often:
 
 ### Overall layout
 
-Every functional zone in one screen:
+One screen, every zone—here's what each area shows:
 
-![Annotated layout tour](docs/images/hero-annotated.png)
+![HUD overall layout](docs/images/hero-en.png)
+
+- **Banner (top)** — live status (`RUNNING · BASH`), context gauge, and info chips (model, effort / ULTRA, workflow, plan, project, branch)
+- **Activity timeline (left)** — the current tool plus a live feed of recent tool calls, with the workflow progress bar on top
+- **Tasks / Tool calls / Changes (center)** — task checklist with completion, per-session tool-call counts, and code changes + cost + duration
+- **Account usage (right)** — 5-hour / 7-day rolling-window usage with reset countdowns
+- **Footer** — project, duration, and one labeled chip per tracked session (the focused one highlighted)
 
 ### Banner detail
 
 Status, context, and info chips lined up across the top:
 
-![Annotated banner tour](docs/images/banner-annotated.png)
+![HUD banner detail](docs/images/banner-en.png)
+
+From left to right: **live status + current tool**, **context usage %**, then the info chips—**model**, **⚡ ULTRA / effort level**, **⚙ workflow M/N**, **subscription plan**, **project name**, and **⎇ git branch**.
 
 ### Waiting alert state
 
 When a session enters `waiting` (approval / idle reminder), the `WAITING` text turns red, enlarges and blinks, with red corner borders and a red status dot—grabbing your attention instantly:
 
-![Waiting alert state](docs/images/waiting.png)
+![Waiting alert state](docs/images/waiting-en.png)
 
 > This is a by-design alert for the `waiting` state, triggered by the `Notification` hook event (approval / idle reminder), and **unrelated to network disconnects**—a dropped connection only shows a single `SSE ○ reconnecting` line in the footer, never a full-screen alert.
 
