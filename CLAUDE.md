@@ -118,6 +118,7 @@ Node.js ESM 模块。导出纯函数 `pickScreen`（从屏幕列表挑最优副�
 
 - 会话记录字段以 `state.js` 的 `createSession()` 为准。
 - `effort` 来自 statusline 的 `effort.level`（low/medium/high/xhigh/max），反映当次真实值；模型不支持时为 `null`，HUD 不渲染该 chip。
+- `ultra` 布尔值，默认 `false`。由 server 端 transcript 轮询判定（`src/transcript.js` 的 `lastEffortMode` 取末条 effort 命令）——statusline 把 ultracode 也报成 `xhigh`、区分不了，故靠 transcript 兜底。为 `true` 时 HUD 把 effort chip 渲染成紫色 `ULTRA`（覆盖 effort 等级；effort 为 `null` 时也照样显示）。
 - `workflow` 来自只读文件轮询（`src/workflow.js` + server `pollWorkflows`）：运行期为
   `{name,runId,status:'running',doneAgents(M),totalAgents(N),phaseTotal}`；完成态 60s 内
   `status:'done'`；其余为 `null`。运行期只有 M/N 计数，当前 phase 不可得（见
