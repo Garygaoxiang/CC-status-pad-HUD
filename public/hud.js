@@ -3,20 +3,26 @@ import {
   focusSession, renderBanner, renderTimeline, renderTasks,
   renderToolCounts, renderChanges, renderUsage, renderFooter,
 } from './render.js';
+import { dict, pickLang } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
+const lang = pickLang(location.search);   // URL ?lang=en 选语言，缺省 zh
 let connected = false;
 let snapshot = { focusId: null, sessions: [], usage: null, ts: 0 };
+
+// 语言运行期不变：初始化设好 <html lang> 与静态时间线表头（render 层不渲染表头）
+document.documentElement.lang = lang;
+$('tl-header').textContent = dict(lang).timelineHeader;
 
 function paint() {
   const session = focusSession(snapshot);
   $('banner').innerHTML = renderBanner(snapshot, session);
-  $('timeline').innerHTML = renderTimeline(session);
-  $('tasks').innerHTML = renderTasks(session);
-  $('toolcounts').innerHTML = renderToolCounts(session);
-  $('changes').innerHTML = renderChanges(session);
-  $('usage').innerHTML = renderUsage(snapshot);
-  $('footer').innerHTML = renderFooter(snapshot, session, connected);
+  $('timeline').innerHTML = renderTimeline(session, lang);
+  $('tasks').innerHTML = renderTasks(session, lang);
+  $('toolcounts').innerHTML = renderToolCounts(session, lang);
+  $('changes').innerHTML = renderChanges(session, lang);
+  $('usage').innerHTML = renderUsage(snapshot, undefined, lang);
+  $('footer').innerHTML = renderFooter(snapshot, session, connected, lang);
   // waiting 整屏告警态 —— Task 7 扩展 #alert 内容与配色
   document.body.classList.toggle('waiting', !!session && session.status === 'waiting');
 }
