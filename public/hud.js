@@ -22,6 +22,19 @@ function fitHud() {
 window.addEventListener('resize', fitHud);
 fitHud();
 
+// 防熄屏：旧设备当常显 HUD 时保持屏幕常亮（Wake Lock API，安卓 Chrome 84+/iOS 16.4+）。
+// 切后台/锁屏会自动释放，故页面重新可见时重新获取；不支持或被拒一律静默，绝不影响 HUD 显示。
+let wakeLock = null;
+async function keepAwake() {
+  try {
+    if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+  } catch { /* 不支持 / 非可见态 / 被拒：静默 */ }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') keepAwake();
+});
+keepAwake();
+
 function paint() {
   const session = focusSession(snapshot);
   $('banner').innerHTML = renderBanner(snapshot, session);
