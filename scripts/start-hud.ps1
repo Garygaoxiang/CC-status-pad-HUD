@@ -27,7 +27,9 @@ $pick = $screensJson | & node "$root\tools\install-lib.js" pick-screen --target 
 $screen = if ($pick) { $pick | ConvertFrom-Json } else { $null }
 
 # 3) 浏览器 kiosk：优先 Chrome，回退 Edge；检测不到副屏则主屏开窗。
+# HUD 页面语言：config.lang 为 en 时给 URL 加 ?lang=en；zh/缺省/读不到不加参数（页面默认 zh）。
 $url = "http://localhost:$port"
+if ($config.lang -eq 'en') { $url = "$url/?lang=en" }
 if ($screen) {
   $a = "--app=$url --kiosk --window-position=$($screen.x),$($screen.y) --window-size=$($screen.width),$($screen.height)"
   Write-Host "HUD -> 副屏 @$($screen.x),$($screen.y) $($screen.width)x$($screen.height) exact=$($screen.exact)"

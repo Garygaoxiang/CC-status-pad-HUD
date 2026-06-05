@@ -1,5 +1,6 @@
 {
   "port": 4317,
   "targetScreen": { "width": 1920, "height": 480 },
-  "browser": "auto"
+  "browser": "auto",
+  "lang": "zh"
 }
