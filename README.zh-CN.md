@@ -84,6 +84,15 @@ powershell -ExecutionPolicy Bypass -File scripts\start-hud.ps1
 卸载：`powershell -ExecutionPolicy Bypass -File scripts\uninstall.ps1`（还原 `settings.json`、移除开机自启）。
 端口可用环境变量 `HUD_PORT` 覆盖（默认 `4317`）。
 
+### 界面语言（中文 / English）
+
+HUD 界面支持中英双语，默认中文。两种切法：
+
+- **临时看**：浏览器直接开 `http://localhost:4317/?lang=en`（英文）或 `http://localhost:4317/`（中文）。
+- **kiosk 默认语言**：改 `scripts/hud-config.json` 的 `lang` 字段（`"zh"` / `"en"`），`start-hud.ps1` 会据此把副屏 kiosk 打开的 URL 拼成对应语言。
+
+未知或缺省语言一律回退中文。文案字典在 `public/i18n.js`。
+
 ## 🏗️ 架构
 
 单向数据流，三段，HUD 永远是「只读末端」：
