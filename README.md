@@ -101,6 +101,13 @@ The HUD supports both Chinese and English, defaulting to Chinese. Two ways to sw
 
 Unknown or missing languages fall back to Chinese. The text dictionary lives in `public/i18n.js`.
 
+### Fitting other screen sizes
+
+The HUD canvas is designed at 1920×480, but **auto-scales and centers** to fit your screen's actual resolution: the launcher opens the window at the detected screen size, and the page scales the canvas to fill it (preserving aspect ratio, never cropping). So **any secondary screen works out of the box**—screens matching the 1920×480 ratio fill edge to edge, others get symmetric letterbox bars.
+
+- **Pick the right screen (multi-monitor)**: set `targetScreen` `width` / `height` in `scripts/hud-config.json` to your screen; `pickScreen` matches it exactly (falling back to the first non-primary screen otherwise).
+- **Remove the bars / tune for your ratio** (advanced): change the `.hud{width/height}` canvas size in `public/hud.css` and adjust the three-column widths and font sizes accordingly—a layout reflow for a new aspect ratio that takes some CSS.
+
 ## 🏗️ Architecture
 
 One-way data flow, three stages; the HUD is always the "read-only tail":
