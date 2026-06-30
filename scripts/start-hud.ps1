@@ -6,19 +6,28 @@ $config = Get-Content (Join-Path $PSScriptRoot 'hud-config.json') -Raw | Convert
 if (-not $config) { Write-Host "缺少配置文件：$PSScriptRoot\hud-config.json，请先运行安装脚本。"; return }
 $port = $config.port
 
-# 1) 采集器：没监听就后台隐藏窗口拉起，轮询最多 5s 等就绪。
-if (-not (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)) {
-  Start-Process -FilePath 'node' -ArgumentList "`"$root\src\server.js`"" -WorkingDirectory $root -WindowStyle Hidden
-  for ($i = 0; $i -lt 20; $i++) {
-    Start-Sleep -Milliseconds 250
-    if (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue) { break }
-  }
-  if (-not (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)) {
-    Write-Host "警告：采集器在 5s 内未就绪（端口 $port），HUD 页面可能显示空白。"
-  }
-}
+# 1) 看门狗：拉起单实例看门狗，由它启动并持续保活采集器（缺席自动重启、带日志回溯）。
+#    看门狗自带全局 Mutex 单实例，重复拉起无害（多余实例会自行退出）。
+$wd = Join-Path $PSScriptRoot 'hud-watchdog.ps1'
+Start-Process powershell -ArgumentList "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$wd`"" -WindowStyle Hidden
 
-# 2) 副屏检测：Screen.AllScreens -> JSON -> install-lib.js pick-screen
+# 2) 等采集器就绪：轮询最多 ~8s。就绪才往下开 kiosk，避免「server 不在却开窗 -> 无限重连」。
+$ready = $false
+for ($i = 0; $i -lt 32; $i++) {
+  Start-Sleep -Milliseconds 250
+  if (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue) { $ready = $true; break }
+}
+$logDir = Join-Path $root 'logs'
+if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+$ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+if (-not $ready) {
+  Add-Content (Join-Path $logDir 'start-hud.log') "$ts  采集器 8s 内未就绪，跳过开 kiosk；看门狗会持续重试，就绪后请重跑本脚本或等下次开机。" -Encoding UTF8
+  Write-Host "采集器未就绪，已跳过打开 HUD 窗口；看门狗会持续重试拉起采集器。"
+  return
+}
+Add-Content (Join-Path $logDir 'start-hud.log') "$ts  采集器就绪，打开 HUD kiosk。" -Encoding UTF8
+
+# 3) 副屏检测：Screen.AllScreens -> JSON -> install-lib.js pick-screen
 Add-Type -AssemblyName System.Windows.Forms
 $screens = @([System.Windows.Forms.Screen]::AllScreens | ForEach-Object { @{ x = $_.Bounds.X; y = $_.Bounds.Y; width = $_.Bounds.Width; height = $_.Bounds.Height; primary = $_.Primary } })
 $target = "$($config.targetScreen.width)x$($config.targetScreen.height)"
@@ -26,7 +35,7 @@ $screensJson = $screens | ConvertTo-Json -Compress
 $pick = $screensJson | & node "$root\tools\install-lib.js" pick-screen --target $target
 $screen = if ($pick) { $pick | ConvertFrom-Json } else { $null }
 
-# 3) 浏览器 kiosk：优先 Chrome，回退 Edge；检测不到副屏则主屏开窗。
+# 4) 浏览器 kiosk：优先 Chrome，回退 Edge；检测不到副屏则主屏开窗。
 # HUD 页面语言：config.lang 为 en 时给 URL 加 ?lang=en；zh/缺省/读不到不加参数（页面默认 zh）。
 $url = "http://localhost:$port"
 if ($config.lang -eq 'en') { $url = "$url/?lang=en" }
