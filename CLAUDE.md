@@ -73,9 +73,13 @@ Node 测试**共用同一份代码**，可在 Node 里直接 TDD。`hud.js` / `h
 
 ### scripts/ — 安装器 / 启动器（Windows PowerShell）
 
-- `start-hud.ps1` — 启动器：检测 :4317 是否在监听，没有则后台拉起 `node src/server.js`；
-  用 `Screen.AllScreens` 检测副屏坐标，用 Chrome/Edge `--app --kiosk --window-position`
-  把 HUD 铺到指定屏；检测不到副屏时降级到主屏以 `--app` 模式打开窗口，不崩溃。
+- `start-hud.ps1` — 启动器：拉起单实例看门狗（`hud-watchdog.ps1`）由它启动并保活采集器；
+  轮询等采集器就绪，**就绪才开 kiosk**（8s 内未就绪则记 `logs/start-hud.log`、跳过开窗，
+  避免「server 不在却开窗 → 无限重连」）；用 `Screen.AllScreens` 检测副屏坐标，Chrome/Edge
+  `--app --kiosk --window-position` 铺到指定屏；检测不到副屏时降级主屏 `--app` 开窗，不崩溃。
+- `hud-watchdog.ps1` — 看门狗：单实例（全局 Mutex）常驻，每 10s 巡检 `:4317`，采集器缺席就带日志
+  （`logs/watchdog.log` + server stdout/stderr）自动重启；node 路径每轮重解析，应对开机早期
+  PATH/盘符未就绪。解决「采集器一次没起来/退出就永久缺席、kiosk 空窗无限重连」的根因。
 - `install.ps1` — 安装器：备份用户 `~/.claude/settings.json`（settings.json 存在时整份
   备份、时间戳命名，不存在则按空配置处理、跳过备份），用 `mergeSettings` 写入
   HUD hook 与 statusline；把启动器注册到 Windows 启动文件夹（`shell:startup`，无需管理员权限）。
