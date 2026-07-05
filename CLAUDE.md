@@ -129,7 +129,11 @@ Node.js ESM 模块。导出纯函数 `pickScreen`（从屏幕列表挑最优副�
   `docs/plans/2026-06-04-workflow-display.md`）。
 - `usage` 形如 `{ fiveHour, sevenDay, fiveHourResetAt, sevenDayResetAt }`
   （百分比 0-100 整数或 `null`，见 `usage.js` 的 `parseUsage`），未取到时整体为 `null`。
-- **已知限制**：`state.js` 当前不填充 `contextPct` / `filesChanged`（恒为 0）。
+- `filesChanged` 为会话内被 `Edit`/`Write`/`MultiEdit` 改过的**去重文件数**
+  （int，由 `state.js` PostToolUse 派生），内部用 `filesChangedPaths` 数组
+  记账；`Read`/`Bash`/`Grep`/`Glob` 等只读工具不计。会话级累计，跨 `Stop` 不清零，
+  只在 `SessionEnd` 或 `pruneStale` 时随会话一起清。
+- **已知限制**：`state.js` 当前不填充 `contextPct`（恒为 0）。
   HUD 照契约忠实渲染，会一直显示 0；这是后续计划项，不要在渲染层 hack 绕过。
 
 ## 约定
