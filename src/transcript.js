@@ -36,6 +36,32 @@ export function lastUsageFromTranscript(text) {
   return null;
 }
 
+// 从 JSONL 文本里取最末一条 assistant 消息的 model 字段（如 "claude-opus-4-7"）。
+// Desktop 版 Claude Code 不调 statusline，无法从 sl.model.display_name 取，转而从
+// transcript 兜底。原样返回 model ID，不做 display 映射——渲染层需要美化时再处理。
+export function lastModelFromTranscript(text) {
+  const lines = String(text || '').split('\n');
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const ln = lines[i].trim();
+    if (!ln) continue;
+    let j;
+    try { j = JSON.parse(ln); } catch { continue; }
+    const m = j && j.message && j.message.model;
+    if (typeof m === 'string' && m) return m;
+  }
+  return null;
+}
+
+// 按 CLI transcript 目录规则从 sessionId + cwd + homeDir 反推 jsonl 路径。
+// 规则实测：<homeDir>/.claude/projects/<cwd 里所有非字母数字字符替换为 '-'>/<sid>.jsonl。
+// Desktop 只从 hook 拿得到 session_id + cwd 却拿不到 transcript_path，靠这个函数补齐。
+// 缺参返回 null；不做 fs 存在性检查，调用方按需 readFile 容错。
+export function deriveTranscriptPath(sessionId, cwd, homeDir) {
+  if (!sessionId || !cwd || !homeDir) return null;
+  const enc = String(cwd).replace(/[^A-Za-z0-9]/g, '-');
+  return `${homeDir}/.claude/projects/${enc}/${sessionId}.jsonl`;
+}
+
 // 从 JSONL 文本里取最末一次 "/effort <mode>" 命令的回显，返回设置的 effort 模式
 // （如 "ultracode" / "high"），无则 null。statusline 不区分 ultracode 与 xhigh，
 // 这是唯一可靠数据源。只认 message.content 为字符串的真命令回显——content 为数组

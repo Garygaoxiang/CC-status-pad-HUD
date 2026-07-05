@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseContextWindow, lastUsageFromTranscript, lastEffortMode } from '../src/transcript.js';
+import {
+  parseContextWindow, lastUsageFromTranscript, lastEffortMode,
+  lastModelFromTranscript, deriveTranscriptPath,
+} from '../src/transcript.js';
 
 test('parseContextWindow 识别 1M', () => {
   assert.equal(parseContextWindow('Opus 4.7 (1M context)'), 1_000_000);
@@ -73,4 +76,55 @@ test('lastEffortMode 无 effort 命令返回 null', () => {
   assert.equal(lastEffortMode(JSON.stringify({ type: 'user', message: { role: 'user', content: 'hi' } })), null);
   assert.equal(lastEffortMode(''), null);
   assert.equal(lastEffortMode(null), null);
+});
+
+// lastModelFromTranscript：Desktop 无 statusline 时的 model 兜底数据源。
+// message.model 是 model ID（如 "claude-opus-4-7"），非 display_name，原样返回。
+test('lastModelFromTranscript 取最末 assistant 消息的 model', () => {
+  const jsonl = [
+    JSON.stringify({ type: 'user', message: { role: 'user' } }),
+    JSON.stringify({ type: 'assistant', message: { role: 'assistant', model: 'claude-sonnet-5' } }),
+    JSON.stringify({ type: 'assistant', message: { role: 'assistant', model: 'claude-opus-4-7' } }),
+    JSON.stringify({ type: 'user', message: { role: 'user' } }),
+  ].join('\n');
+  assert.equal(lastModelFromTranscript(jsonl), 'claude-opus-4-7');
+});
+
+test('lastModelFromTranscript 无 model 返回 null', () => {
+  assert.equal(lastModelFromTranscript(''), null);
+  assert.equal(lastModelFromTranscript(null), null);
+  assert.equal(lastModelFromTranscript(JSON.stringify({ type: 'user', message: { role: 'user' } })), null);
+});
+
+test('lastModelFromTranscript 跳过坏行', () => {
+  const jsonl = ['{ broken',
+    JSON.stringify({ type: 'assistant', message: { model: 'claude-haiku-4-5' } })].join('\n');
+  assert.equal(lastModelFromTranscript(jsonl), 'claude-haiku-4-5');
+});
+
+// deriveTranscriptPath：Desktop hook 里只有 session_id + cwd，需按 CLI 规则反推
+// transcript 路径。规则实测：cwd 里所有非字母数字字符替换为 '-'。
+test('deriveTranscriptPath 按 CLI 规则拼路径（H:\\turzx\\turzx-coding-hud）', () => {
+  const sid = 'aeccdd79-e033-436c-9145-a912bb243b0d';
+  assert.equal(
+    deriveTranscriptPath(sid, 'H:\\turzx\\turzx-coding-hud', '/c/Users/GaryPC'),
+    `/c/Users/GaryPC/.claude/projects/H--turzx-turzx-coding-hud/${sid}.jsonl`,
+  );
+});
+
+test('deriveTranscriptPath 空格/数字按实测规则编码', () => {
+  // 实测目录名 "D--Graphisoft-Archicad-28-INT-ArchiApiUtilities" 对应此 cwd
+  const sid = 'd488c7d1';
+  const cwd = 'D:\\Graphisoft\\Archicad 28 INT\\ArchiApiUtilities';
+  assert.equal(
+    deriveTranscriptPath(sid, cwd, '/c/Users/GaryPC'),
+    `/c/Users/GaryPC/.claude/projects/D--Graphisoft-Archicad-28-INT-ArchiApiUtilities/${sid}.jsonl`,
+  );
+});
+
+test('deriveTranscriptPath 缺参返回 null', () => {
+  assert.equal(deriveTranscriptPath(null, 'a', 'b'), null);
+  assert.equal(deriveTranscriptPath('sid', null, 'b'), null);
+  assert.equal(deriveTranscriptPath('sid', 'a', null), null);
+  assert.equal(deriveTranscriptPath('', 'a', 'b'), null);
 });
