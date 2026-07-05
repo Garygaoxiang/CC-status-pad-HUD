@@ -2,12 +2,16 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { homedir } from 'node:os';
 import {
   applyEvent, applyStatusline, createSession, pickFocus, pruneStale,
 } from './state.js';
 import { readToken, fetchUsage, readProxy } from './usage.js';
 import { collectWorkflow, sessionDirFromTranscript } from './workflow.js';
-import { lastUsageFromTranscript, parseContextWindow, lastEffortMode } from './transcript.js';
+import {
+  lastUsageFromTranscript, parseContextWindow, lastEffortMode,
+  lastModelFromTranscript, deriveTranscriptPath,
+} from './transcript.js';
 
 const TRANSCRIPT_POLL_MS = 5_000;
 const WF_POLL_MS = 8_000;
@@ -117,15 +121,27 @@ export function createCollector() {
   const pollTranscripts = async () => {
     let dirty = false;
     for (const sess of sessions.values()) {
-      if (!sess.transcriptPath) continue;
+      // Desktop 版 hook 拿不到 transcript_path，用 sessionId + cwd 反推一次兜底
+      let path = sess.transcriptPath;
+      if (!path && sess.sessionId && sess.cwd) {
+        path = deriveTranscriptPath(sess.sessionId, sess.cwd, homedir());
+      }
+      if (!path) continue;
       try {
-        const text = await readFile(sess.transcriptPath, 'utf8');
+        const text = await readFile(path, 'utf8');
         const patch = {};
+        // 反推路径首次读通即固化，避免后续每轮重推
+        if (path !== sess.transcriptPath) patch.transcriptPath = path;
         const used = lastUsageFromTranscript(text);
         if (used != null) {
           const win = parseContextWindow(sess.model);
           const pct = Math.max(0, Math.min(100, Math.round((used / win) * 100)));
           if (pct !== sess.contextPct) patch.contextPct = pct;
+        }
+        // Desktop 版 statusline 不到位，model 从 transcript 兜底
+        if (!sess.model) {
+          const m = lastModelFromTranscript(text);
+          if (m) patch.model = m;
         }
         // ultracode 检测：statusline 只报 xhigh，靠 transcript 最末 effort 命令判定
         const ultra = lastEffortMode(text) === 'ultracode';
