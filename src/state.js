@@ -13,7 +13,7 @@ export function createSession(sessionId) {
     sessionId, status: 'idle', currentTool: null,
     model: null, effort: null, ultra: false, plan: null, cwd: null, projectName: null, branch: null,
     timeline: [], tasks: [], toolCounts: {},
-    contextPct: 0, linesAdded: 0, linesRemoved: 0, filesChanged: 0,
+    contextPct: 0, linesAdded: 0, linesRemoved: 0, filesChanged: 0, filesChangedPaths: [],
     costUsd: 0, durationMs: 0, lastSeen: 0,
     transcriptPath: null,
     workflow: null,
@@ -85,6 +85,14 @@ export function applyEvent(session, event, now = Date.now()) {
       if (s.timeline.length > MAX_TIMELINE) s.timeline = s.timeline.slice(-MAX_TIMELINE);
       if (name === 'TaskCreate' || name === 'TaskUpdate' || name === 'TodoWrite')
         s.tasks = applyTaskTool(s.tasks, name, event.tool_input, event.tool_response);
+      // filesChanged：Edit/Write/MultiEdit 去重累加改动过的 file_path
+      if (name === 'Edit' || name === 'Write' || name === 'MultiEdit') {
+        const fp = event.tool_input?.file_path;
+        if (fp && !session.filesChangedPaths.includes(fp)) {
+          s.filesChangedPaths = [...session.filesChangedPaths, fp];
+          s.filesChanged = s.filesChangedPaths.length;
+        }
+      }
       break;
     }
     case 'Notification': s.status = 'waiting'; break;

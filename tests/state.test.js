@@ -149,3 +149,43 @@ test('applyStatusline 解析 effort.level，且可从有清回无（反映当次
 test('createSession 初始 workflow 为 null', () => {
   assert.equal(createSession('abc').workflow, null);
 });
+
+test('createSession 初始 filesChanged 为 0', () => {
+  assert.equal(createSession('abc').filesChanged, 0);
+});
+
+test('PostToolUse Edit/Write/MultiEdit 累加 filesChanged（去重）', () => {
+  let s = createSession('abc');
+  // Edit 一个文件 → 1
+  s = applyEvent(s, { hook_event_name: 'PostToolUse', tool_name: 'Edit',
+    tool_input: { file_path: 'C:/p/a.ts' } }, 1);
+  assert.equal(s.filesChanged, 1);
+  // Write 另一个文件 → 2
+  s = applyEvent(s, { hook_event_name: 'PostToolUse', tool_name: 'Write',
+    tool_input: { file_path: 'C:/p/b.ts' } }, 2);
+  assert.equal(s.filesChanged, 2);
+  // MultiEdit 第三个文件 → 3
+  s = applyEvent(s, { hook_event_name: 'PostToolUse', tool_name: 'MultiEdit',
+    tool_input: { file_path: 'C:/p/c.ts' } }, 3);
+  assert.equal(s.filesChanged, 3);
+  // 再 Edit 同一个 a.ts → 仍是 3（去重）
+  s = applyEvent(s, { hook_event_name: 'PostToolUse', tool_name: 'Edit',
+    tool_input: { file_path: 'C:/p/a.ts' } }, 4);
+  assert.equal(s.filesChanged, 3);
+});
+
+test('PostToolUse Read/Bash 不影响 filesChanged', () => {
+  let s = createSession('abc');
+  s = applyEvent(s, { hook_event_name: 'PostToolUse', tool_name: 'Read',
+    tool_input: { file_path: 'C:/p/a.ts' } }, 1);
+  s = applyEvent(s, { hook_event_name: 'PostToolUse', tool_name: 'Bash',
+    tool_input: { command: 'ls' } }, 2);
+  assert.equal(s.filesChanged, 0);
+});
+
+test('filesChanged 无 file_path 时不崩且不计数', () => {
+  let s = createSession('abc');
+  s = applyEvent(s, { hook_event_name: 'PostToolUse', tool_name: 'Edit',
+    tool_input: {} }, 1);
+  assert.equal(s.filesChanged, 0);
+});
