@@ -136,8 +136,10 @@ Node.js ESM 模块。导出纯函数 `pickScreen`（从屏幕列表挑最优副�
 - `contextPct` 由 server `pollTranscripts` 派生：读会话 `transcriptPath`
   的末条 assistant `message.usage`，把 `input_tokens + cache_creation_input_tokens
   + cache_read_input_tokens` 之和除以模型上下文窗口（`parseContextWindow` 从
-  `session.model` display_name 里解析，1M/200k/200K；无匹配回退 200K）取整
-  百分比。会话无 `transcriptPath` 或读不到时保持前值（初始 0）。
+  `session.model` 解析：statusline 给的 display_name 含 "(1M context)" / "(200k
+  context)" 时精确取数；Desktop 兼容路径 transcript 兜底给的是 raw model ID
+  时按 family 映射——`claude-opus-4-*` → 1M，其余保持 200K 默认）取整百分比。
+  会话无 `transcriptPath` 或读不到时保持前值（初始 0）。
 
 ## 约定
 
