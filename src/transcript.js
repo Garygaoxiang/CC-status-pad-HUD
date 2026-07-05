@@ -4,14 +4,18 @@
 const DEFAULT_WINDOW = 200_000;
 
 // "Opus 4.7 (1M context)" → 1_000_000；"Sonnet (200k context)" → 200_000；
-// 无识别则回退 200K。匹配大小写不敏感的 1M / 200k / 200K 等常见写法。
+// Desktop 兼容路径的 raw model ID（"claude-opus-4-7"）按 model family 兜底：
+// opus-4-* → 1M（用户账户 Opus 4.x 现均开 1M），其余保持 200K 默认。
 export function parseContextWindow(displayName) {
-  const m = String(displayName || '').match(/(\d+)\s*([mMkK])\b/);
-  if (!m) return DEFAULT_WINDOW;
-  const n = Number(m[1]);
-  const u = m[2].toLowerCase();
-  if (u === 'm') return n * 1_000_000;
-  if (u === 'k') return n * 1_000;
+  const s = String(displayName || '');
+  const m = s.match(/(\d+)\s*([mMkK])\b/);
+  if (m) {
+    const n = Number(m[1]);
+    const u = m[2].toLowerCase();
+    if (u === 'm') return n * 1_000_000;
+    if (u === 'k') return n * 1_000;
+  }
+  if (/^claude-opus-4/i.test(s)) return 1_000_000;
   return DEFAULT_WINDOW;
 }
 

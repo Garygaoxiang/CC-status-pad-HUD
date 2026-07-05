@@ -22,6 +22,19 @@ test('parseContextWindow 无匹配回退到 200K', () => {
   assert.equal(parseContextWindow(undefined), 200_000);
 });
 
+// Desktop 兼容路径 transcript 兜底给的是 raw model ID（无 "(1M context)" 后缀）；
+// 目前用户账户仅确认 Opus 4.x 开了 1M，Sonnet/Haiku 暂无证据故保守留 200K。
+test('parseContextWindow 识别 Opus 4.x raw ID → 1M', () => {
+  assert.equal(parseContextWindow('claude-opus-4-7'), 1_000_000);
+  assert.equal(parseContextWindow('claude-opus-4-8'), 1_000_000);
+  assert.equal(parseContextWindow('claude-opus-4-6'), 1_000_000);
+});
+
+test('parseContextWindow 其他 raw ID 保持 200K 默认', () => {
+  assert.equal(parseContextWindow('claude-haiku-4-5'), 200_000);
+  assert.equal(parseContextWindow('claude-sonnet-4-5'), 200_000);
+});
+
 test('lastUsageFromTranscript 取最末 assistant 消息的 usage', () => {
   const jsonl = [
     JSON.stringify({ type: 'user', message: { role: 'user' } }),
