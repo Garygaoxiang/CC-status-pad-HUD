@@ -195,7 +195,7 @@ export function createCollector() {
     clients.clear();
     return new Promise((resolve) => server.close(resolve));
   }
-  return { server, start, stop, snapshot };
+  return { server, start, stop, snapshot, pollTranscripts };
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
