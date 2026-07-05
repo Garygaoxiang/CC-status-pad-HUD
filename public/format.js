@@ -116,3 +116,19 @@ export function fitScale(winW, winH, baseW = 1920, baseH = 480) {
   const s = Math.min(Number(winW) / baseW, Number(winH) / baseH);
   return Number.isFinite(s) && s > 0 ? s : 1;
 }
+
+// 美化 model 显示：statusline 送的 display_name（"Opus 4.7 (1M context)"）原样透传；
+// transcript 兜底出来的 raw ID（"claude-opus-4-7"、"claude-haiku-4-5-20251001"）
+// 解析成「Family M.m」。空值→null；claude- 前缀但结构不识别时原样返回避免吞值。
+export function modelDisplay(model) {
+  if (!model) return null;
+  const s = String(model);
+  if (!s.startsWith('claude-')) return s;
+  const parts = s.split('-');
+  if (parts.length < 3) return s;
+  const [, family, major, minor] = parts;
+  if (!/^\d+$/.test(major)) return s;
+  const cap = family.charAt(0).toUpperCase() + family.slice(1);
+  if (minor && /^\d+$/.test(minor)) return `${cap} ${major}.${minor}`;
+  return `${cap} ${major}`;
+}

@@ -4,7 +4,7 @@ import {
   esc, statusText, clock, toolColor, barWidth, countdown, taskProgress, duration,
   effortLabel, effortClass,
   workflowChipText, workflowClass, workflowPct, workflowPhaseText,
-  fitScale,
+  fitScale, modelDisplay,
 } from '../public/format.js';
 
 test('esc 转义 HTML 特殊字符', () => {
@@ -138,4 +138,28 @@ test('fitScale 取宽/高较小比、保宽高比、非法回退 1', () => {
   assert.equal(fitScale(800, 480), 800 / 1920);    // 窄屏：受宽限制
   assert.equal(fitScale(0, 0), 1);                 // 防御：非法回退 1
   assert.equal(fitScale(1000, 1000, 500, 500), 2); // 自定义基准
+});
+
+test('modelDisplay 把 transcript 兜底的 claude-<family>-<M>-<m> 美化', () => {
+  // Desktop 兜底常见 model ID（transcript.js:lastModelFromTranscript 返回值）
+  assert.equal(modelDisplay('claude-opus-4-7'), 'Opus 4.7');
+  assert.equal(modelDisplay('claude-opus-4-8'), 'Opus 4.8');
+  assert.equal(modelDisplay('claude-sonnet-5'), 'Sonnet 5');
+  assert.equal(modelDisplay('claude-fable-5'), 'Fable 5');
+  // 带日期后缀（Haiku 4.5 官方 ID 形如 claude-haiku-4-5-20251001）
+  assert.equal(modelDisplay('claude-haiku-4-5-20251001'), 'Haiku 4.5');
+});
+
+test('modelDisplay statusline 已美化文本原样透传', () => {
+  // statusline 送的 display_name 已经是「Opus 4.7 (1M context)」这种，不该二次处理
+  assert.equal(modelDisplay('Opus 4.7 (1M context)'), 'Opus 4.7 (1M context)');
+  assert.equal(modelDisplay('Sonnet 5'), 'Sonnet 5');
+});
+
+test('modelDisplay 空/未知输入安全回退', () => {
+  assert.equal(modelDisplay(null), null);
+  assert.equal(modelDisplay(''), null);
+  assert.equal(modelDisplay(undefined), null);
+  // 无法解析的 claude- 前缀原样返回，避免吞掉真实值
+  assert.equal(modelDisplay('claude-experimental'), 'claude-experimental');
 });

@@ -3,6 +3,7 @@ import {
   esc, statusText, clock, toolColor, barWidth, countdown, taskProgress, duration,
   effortLabel, effortClass,
   workflowChipText, workflowClass, workflowPct, workflowPhaseText,
+  modelDisplay,
 } from './format.js';
 import { dict } from './i18n.js';
 
@@ -51,7 +52,7 @@ export function renderBanner(snapshot, session) {
   const s = session || {};
   const pct = Math.round(Number(s.contextPct) || 0);
   const chips = [
-    chip(s.model && String(s.model).toUpperCase(), 'k'),
+    chip(modelDisplay(s.model)?.toUpperCase(), 'k'),
     effortChip(s.effort, s.ultra),
     workflowChip(s.workflow),
     chip(s.plan, 'm'),
