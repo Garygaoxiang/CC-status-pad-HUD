@@ -133,8 +133,11 @@ Node.js ESM 模块。导出纯函数 `pickScreen`（从屏幕列表挑最优副�
   （int，由 `state.js` PostToolUse 派生），内部用 `filesChangedPaths` 数组
   记账；`Read`/`Bash`/`Grep`/`Glob` 等只读工具不计。会话级累计，跨 `Stop` 不清零，
   只在 `SessionEnd` 或 `pruneStale` 时随会话一起清。
-- **已知限制**：`state.js` 当前不填充 `contextPct`（恒为 0）。
-  HUD 照契约忠实渲染，会一直显示 0；这是后续计划项，不要在渲染层 hack 绕过。
+- `contextPct` 由 server `pollTranscripts` 派生：读会话 `transcriptPath`
+  的末条 assistant `message.usage`，把 `input_tokens + cache_creation_input_tokens
+  + cache_read_input_tokens` 之和除以模型上下文窗口（`parseContextWindow` 从
+  `session.model` display_name 里解析，1M/200k/200K；无匹配回退 200K）取整
+  百分比。会话无 `transcriptPath` 或读不到时保持前值（初始 0）。
 
 ## 约定
 
