@@ -2,9 +2,10 @@
 // statusline 命令、透传其输出。stdin 只能读一次，故先整段读入再分发。
 import http from 'node:http';
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { reviveClaudeHudPath } from './statusline-path.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const input = readFileSync(0, 'utf8');          // fd 0 = stdin
@@ -28,7 +29,12 @@ try {
   // original-statusline.txt 为本地生成（见安装步骤），不纳入版本控制
   const orig = readFileSync(join(here, 'original-statusline.txt'), 'utf8').trim();
   if (orig) {
-    const r = spawnSync(toWinPaths(orig), { shell: true, input, encoding: 'utf8', timeout: 5000 });
+    // 插件升级会使 original-statusline.txt 里 pin 死的版本路径失效，spawn 前救回现存版本
+    const cmd = reviveClaudeHudPath(toWinPaths(orig), {
+      exists: existsSync,
+      listVersions: (dir) => { try { return readdirSync(dir); } catch { return []; } },
+    });
+    const r = spawnSync(cmd, { shell: true, input, encoding: 'utf8', timeout: 5000 });
     process.stdout.write(r.stdout || '');
   }
 } catch { /* 无原始命令则输出空状态栏 */ }
