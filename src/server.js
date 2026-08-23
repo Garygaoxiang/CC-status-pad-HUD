@@ -29,6 +29,7 @@ export function createCollector() {
   const sessions = new Map();
   const clients = new Set();
   let usage = null;
+  let usageAuth = null;      // null=还没轮询过，false=无凭据，true=拿到过
   let timer = null;
 
   const getSession = (id) => {
@@ -41,7 +42,7 @@ export function createCollector() {
     return {
       focusId: focus?.sessionId || null,
       sessions: [...sessions.values()],
-      usage, ts: Date.now(),
+      usage, usageAuth, ts: Date.now(),
     };
   };
   const broadcast = () => {
@@ -114,7 +115,13 @@ export function createCollector() {
 
   const pollUsage = async () => {
     const token = readToken();
-    if (!token) return;
+    // 无凭据是常态之一（Desktop 不写 .credentials.json），如实告诉 HUD，
+    // 别让额度区一直挂着「同步中」这种永远不会好转的假象。
+    if (!token) {
+      if (usageAuth !== false) { usageAuth = false; broadcast(); }
+      return;
+    }
+    usageAuth = true;
     const u = await fetchUsage(token, readProxy());
     if (u) { usage = u; broadcast(); }
   };

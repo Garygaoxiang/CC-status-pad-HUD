@@ -130,6 +130,9 @@ Node.js ESM 模块。导出纯函数 `pickScreen`（从屏幕列表挑最优副�
   `docs/plans/2026-06-04-workflow-display.md`）。
 - `usage` 形如 `{ fiveHour, sevenDay, fiveHourResetAt, sevenDayResetAt }`
   （百分比 0-100 整数或 `null`，见 `usage.js` 的 `parseUsage`），未取到时整体为 `null`。
+- `usageAuth`：`null` 还没轮询过 / `false` 读不到 `~/.claude/.credentials.json` / `true` 拿到过凭据。
+  HUD 靠它区分「同步中」与「无凭据」——Desktop 不写凭据文件，后者是常态，
+  额度区显示「无凭据 · 需 CLI 登录一次」而不是永远挂着同步中。
 - `filesChanged` 为会话内被 `Edit`/`Write`/`MultiEdit` 改过的**去重文件数**
   （int，由 `state.js` PostToolUse 派生），内部用 `filesChangedPaths` 数组
   记账；`Read`/`Bash`/`Grep`/`Glob` 等只读工具不计。会话级累计，跨 `Stop` 不清零，

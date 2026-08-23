@@ -203,3 +203,12 @@ test('renderTimeline workflow 名转义注入', () => {
   assert.doesNotMatch(html, /<img>/);
   assert.match(html, /&lt;img&gt;/);
 });
+
+test('renderUsage 无凭据时说明原因，而不是一直「同步中」', () => {
+  // usageAuth === false：采集器读不到 ~/.claude/.credentials.json（Desktop 不写这个文件）
+  const html = renderUsage({ usage: null, usageAuth: false });
+  assert.match(html, /无凭据/);
+  assert.doesNotMatch(html, /同步中/);
+  // 未知（还没轮询过）仍是同步中
+  assert.match(renderUsage({ usage: null }), /同步中/);
+});

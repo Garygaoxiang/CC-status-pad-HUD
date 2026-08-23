@@ -133,21 +133,25 @@ export function renderChanges(session, lang) {
 </div>`;
 }
 
-function gauge(name, pct, resetAt, grad, accent, now, L) {
+function gauge(name, pct, resetAt, grad, accent, now, L, tip) {
   const known = Number.isFinite(pct);
   return `<div class="gz">
   <div class="g1"><span class="nm">${esc(name)}</span><span class="pc" style="color:${known ? accent : '#516a90'}">${known ? pct + '%' : '—'}</span></div>
   <div class="bar"><i style="width:${barWidth(known ? pct : 0)};background:${grad}"><span class="sh"></span></i></div>
-  <div class="rs mono">${known && resetAt ? L.reset(countdown(resetAt, now, L.cdNow)) : L.syncing}</div>
+  <div class="rs mono">${known && resetAt ? L.reset(countdown(resetAt, now, L.cdNow)) : tip}</div>
 </div>`;
 }
 
 export function renderUsage(snapshot, now = Date.now(), lang) {
-  const u = (snapshot || {}).usage || {};
+  const snap = snapshot || {};
+  const u = snap.usage || {};
   const L = dict(lang);
+  // 拿不到额度分两种：还没轮询到（同步中）与压根没凭据（usageAuth 为 false，
+  // Desktop 不写 ~/.claude/.credentials.json）。后者永远不会好转，别再假装在同步。
+  const tip = snap.usageAuth === false ? L.noAuth : L.syncing;
   return `<div class="lbl">${L.usageTitle}</div>
-${gauge(L.usage5h, u.fiveHour, u.fiveHourResetAt, 'linear-gradient(90deg,#27d3f5,#3ff58f)', '#27d3f5', now, L)}
-${gauge(L.usage7d, u.sevenDay, u.sevenDayResetAt, 'linear-gradient(90deg,#ff2d8e,#ff8ac0)', '#ff5ca3', now, L)}
+${gauge(L.usage5h, u.fiveHour, u.fiveHourResetAt, 'linear-gradient(90deg,#27d3f5,#3ff58f)', '#27d3f5', now, L, tip)}
+${gauge(L.usage7d, u.sevenDay, u.sevenDayResetAt, 'linear-gradient(90deg,#ff2d8e,#ff8ac0)', '#ff5ca3', now, L, tip)}
 <div class="rs mono" style="margin-top:17px">${L.syncNote}</div>`;
 }
 
