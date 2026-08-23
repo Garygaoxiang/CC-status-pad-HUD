@@ -119,3 +119,29 @@ test('静态资源带 no-store：iOS 主屏 Web App 不会拿旧页面', async (
   assert.equal(res.headers.get('cache-control'), 'no-store');
   await c.stop();
 });
+
+// pollTranscripts 集成：无 statusline 的会话（Desktop）从 transcript 首条时间戳
+// 取回真实会话起点，会话时长不再因采集器重启而清零。
+test('pollTranscripts 无 statusline 时从 transcript 派生会话起点与时长', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'hud-'));
+  const jsonlPath = join(dir, 't.jsonl');
+  const started = Date.now() - 90_000;                 // 90 秒前开的会话
+  await writeFile(jsonlPath, JSON.stringify({
+    type: 'queue-operation', timestamp: new Date(started).toISOString(),
+  }), 'utf8');
+
+  const c = createCollector();
+  const port = await listen(c);
+  // 只走 hook（Desktop 没有 statusline），transcript_path 由 hook 载荷直接带上
+  await fetch(`http://localhost:${port}/hook`, {
+    method: 'POST',
+    body: JSON.stringify({ session_id: 'dur1', hook_event_name: 'PreToolUse',
+      tool_name: 'Bash', tool_input: { command: 'ls' }, cwd: dir, transcript_path: jsonlPath }),
+  });
+  await c.pollTranscripts();
+  const sess = c.snapshot().sessions.find((s) => s.sessionId === 'dur1');
+  assert.equal(sess.startedAt, started);
+  assert.ok(sess.durationMs >= 90_000, `时长应 >= 90s，实际 ${sess.durationMs}`);
+  await c.stop();
+  await rm(dir, { recursive: true, force: true });
+});

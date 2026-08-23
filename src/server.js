@@ -10,7 +10,7 @@ import { readToken, fetchUsage, readProxy } from './usage.js';
 import { collectWorkflow, sessionDirFromTranscript } from './workflow.js';
 import {
   lastUsageFromTranscript, parseContextWindow, lastEffortMode,
-  lastModelFromTranscript, deriveTranscriptPath,
+  lastModelFromTranscript, deriveTranscriptPath, firstTimestamp,
 } from './transcript.js';
 
 const TRANSCRIPT_POLL_MS = 5_000;
@@ -147,6 +147,15 @@ export function createCollector() {
         if (!sess.model) {
           const m = lastModelFromTranscript(text);
           if (m) patch.model = m;
+        }
+        // 会话起点与时长：statusline 供数时以它为准，没有（Desktop）才从 transcript 首条
+        // 时间戳校回真实起点——否则采集器一重启，时长就从 0 重新数。
+        if (!sess.slSeen) {
+          const started = firstTimestamp(text);
+          if (started && started !== sess.startedAt) patch.startedAt = started;
+          const from = patch.startedAt || sess.startedAt;
+          // 轮询里也刷时长：会话空闲无 hook 时，墙钟照样往前走
+          if (from) patch.durationMs = Date.now() - from;
         }
         // ultracode 检测：statusline 只报 xhigh，靠 transcript 最末 effort 命令判定
         const ultra = lastEffortMode(text) === 'ultracode';

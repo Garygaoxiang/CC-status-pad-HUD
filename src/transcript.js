@@ -4,8 +4,9 @@
 const DEFAULT_WINDOW = 200_000;
 
 // "Opus 4.7 (1M context)" → 1_000_000；"Sonnet (200k context)" → 200_000；
-// Desktop 兼容路径的 raw model ID（"claude-opus-4-7"）按 model family 兜底：
-// opus-4-* → 1M（用户账户 Opus 4.x 现均开 1M），其余保持 200K 默认。
+// Desktop 兼容路径的 raw model ID（"claude-opus-5"）按 model family 兜底：
+// claude-opus-* → 1M（本账户 Opus 均开 1M；实测单会话 237K tokens 未触发压缩，
+// 按 200K 算会算出 119% 这种虚高），其余保持 200K 默认，宁可低估不虚高。
 export function parseContextWindow(displayName) {
   const s = String(displayName || '');
   const m = s.match(/(\d+)\s*([mMkK])\b/);
@@ -15,7 +16,7 @@ export function parseContextWindow(displayName) {
     if (u === 'm') return n * 1_000_000;
     if (u === 'k') return n * 1_000;
   }
-  if (/^claude-opus-4/i.test(s)) return 1_000_000;
+  if (/^claude-opus-/i.test(s)) return 1_000_000;
   return DEFAULT_WINDOW;
 }
 
@@ -64,6 +65,20 @@ export function deriveTranscriptPath(sessionId, cwd, homeDir) {
   if (!sessionId || !cwd || !homeDir) return null;
   const enc = String(cwd).replace(/[^A-Za-z0-9]/g, '-');
   return `${homeDir}/.claude/projects/${enc}/${sessionId}.jsonl`;
+}
+
+// 取 JSONL 里首条带合法 timestamp 的记录，返回毫秒时间戳；无则 null。
+// 会话真实起点——采集器是内存态，重启后 startedAt 会退化成「重启时刻」，
+// 用它把会话时长校回真实值（Desktop 无 statusline 时是唯一来源）。
+export function firstTimestamp(text) {
+  for (const ln of String(text || '').split('\n')) {
+    if (!ln.trim()) continue;
+    let j;
+    try { j = JSON.parse(ln); } catch { continue; }
+    const t = j && j.timestamp ? Date.parse(j.timestamp) : NaN;
+    if (Number.isFinite(t)) return t;
+  }
+  return null;
 }
 
 // 从 JSONL 文本里取最末一次 "/effort <mode>" 命令的回显，返回设置的 effort 模式

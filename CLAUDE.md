@@ -134,12 +134,20 @@ Node.js ESM 模块。导出纯函数 `pickScreen`（从屏幕列表挑最优副�
   （int，由 `state.js` PostToolUse 派生），内部用 `filesChangedPaths` 数组
   记账；`Read`/`Bash`/`Grep`/`Glob` 等只读工具不计。会话级累计，跨 `Stop` 不清零，
   只在 `SessionEnd` 或 `pruneStale` 时随会话一起清。
+- `linesAdded` / `linesRemoved` / `durationMs` 为**双来源**：statusline 供数时以它为准
+  （CLI，精确）；会话从未收到过 statusline 时（Desktop）由 hook 派生——行数用
+  `estimateLines` 从 `Edit`/`Write`/`MultiEdit` 的入参估算（整块替换 = 新块记增、旧块记删；
+  `Write` 旧内容不可知故删记 0），时长取「首个事件 → 最新事件」的墙钟。
+  `slSeen` 记录本会话是否被 statusline 供过数；`startedAt` 优先取 transcript 首条记录的
+  `timestamp`（`firstTimestamp`，会话真实起点，采集器重启也不清零），取不到才退回首个 hook
+  事件时间。`pollTranscripts` 每轮也刷一次 `durationMs`，会话空闲无 hook 时墙钟照样走。
+  `costUsd` 没有派生来源，Desktop 上恒为 0。
 - `contextPct` 由 server `pollTranscripts` 派生：读会话 `transcriptPath`
   的末条 assistant `message.usage`，把 `input_tokens + cache_creation_input_tokens
   + cache_read_input_tokens` 之和除以模型上下文窗口（`parseContextWindow` 从
   `session.model` 解析：statusline 给的 display_name 含 "(1M context)" / "(200k
   context)" 时精确取数；Desktop 兼容路径 transcript 兜底给的是 raw model ID
-  时按 family 映射——`claude-opus-4-*` → 1M，其余保持 200K 默认）取整百分比。
+  时按 family 映射——`claude-opus-*` → 1M，其余保持 200K 默认）取整百分比。
   会话无 `transcriptPath` 或读不到时保持前值（初始 0）。
 
 ## Claude Desktop 上的差异（与 CLI 共用同一套 hook）
@@ -149,9 +157,9 @@ Desktop 版读同一份 `~/.claude/settings.json`，hook 照常触发，装一�
 比早期以为的全（早年为 Desktop 写的 `deriveTranscriptPath` 反推因此退化成纯兜底）。
 真正的差异只有两处，都是**能力缺失、不是故障**：
 
-- **Desktop 不调 statusline** → `costUsd` / `durationMs` / `linesAdded` / `linesRemoved` 恒为 0，
-  无替代数据源。`model` / `effort` / `contextPct` / `transcriptPath` 已由 transcript 轮询与
-  hook 载荷分别兜底，不受影响。
+- **Desktop 不调 statusline** → 只有 `costUsd` 恒为 0（无派生来源）。`durationMs` 与增删行数
+  已由 hook 派生兜底（见 §数据契约，估算值，与 CLI 的精确统计有出入）；
+  `model` / `effort` / `contextPct` / `transcriptPath` 由 transcript 轮询与 hook 载荷兜底。
 - **Desktop 不写 `~/.claude/.credentials.json`** → `usage`（5h/7d 配额）为 `null`，HUD 配额区留空。
   想要配额：在终端跑一次 CLI 版 `claude` 登录，凭据文件生成后 usage 轮询器自会取到。
 

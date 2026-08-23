@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parseContextWindow, lastUsageFromTranscript, lastEffortMode,
-  lastModelFromTranscript, deriveTranscriptPath,
+  lastModelFromTranscript, deriveTranscriptPath, firstTimestamp,
 } from '../src/transcript.js';
 
 test('parseContextWindow 识别 1M', () => {
@@ -140,4 +140,29 @@ test('deriveTranscriptPath 缺参返回 null', () => {
   assert.equal(deriveTranscriptPath('sid', null, 'b'), null);
   assert.equal(deriveTranscriptPath('sid', 'a', null), null);
   assert.equal(deriveTranscriptPath('', 'a', 'b'), null);
+});
+
+test('firstTimestamp 取首条带时间戳的记录，作为会话真实起点', () => {
+  const jsonl = [
+    JSON.stringify({ type: 'queue-operation', timestamp: '2026-08-23T07:04:14.356Z' }),
+    JSON.stringify({ type: 'user', timestamp: '2026-08-23T07:05:00.000Z' }),
+  ].join('\n');
+  assert.equal(firstTimestamp(jsonl), Date.parse('2026-08-23T07:04:14.356Z'));
+  // 首行没时间戳就往下找
+  assert.equal(firstTimestamp(['{"type":"x"}', '{"timestamp":"2026-08-23T08:00:00.000Z"}'].join('\n')),
+    Date.parse('2026-08-23T08:00:00.000Z'));
+  // 坏行跳过；全无时间戳、空文本一律 null
+  assert.equal(firstTimestamp('不是json\n{"timestamp":"2026-08-23T08:00:00.000Z"}'),
+    Date.parse('2026-08-23T08:00:00.000Z'));
+  assert.equal(firstTimestamp('{"type":"x"}'), null);
+  assert.equal(firstTimestamp(''), null);
+  assert.equal(firstTimestamp('{"timestamp":"瞎写"}'), null);
+});
+
+test('parseContextWindow：raw model ID 的 opus 家族一律 1M', () => {
+  // Desktop 兜底路径给的是 raw ID，没有 "(1M context)" 可解析
+  assert.equal(parseContextWindow('claude-opus-5'), 1_000_000);
+  assert.equal(parseContextWindow('claude-opus-4-7'), 1_000_000);
+  // 非 opus 的 raw ID 保持 200K 默认，宁可低估不虚高
+  assert.equal(parseContextWindow('claude-haiku-4-5-20251001'), 200_000);
 });
