@@ -117,6 +117,18 @@ export function fitScale(winW, winH, baseW = 1920, baseH = 480) {
   return Number.isFinite(s) && s > 0 ? s : 1;
 }
 
+// 画布基准尺寸：按窗口宽高比在「带状副屏」与「4:3 平板」两套设计稿之间选。
+// TURZX 副屏是 1920×480（4:1）；iPad 横屏是 4:3，用带状画布只能等比缩到 1/3 屏、上下全黑边，
+// 故给平板另配一张 1440×1080 的竖排稿（配合 body.tall 的 CSS 把三列改上下堆叠）。
+// 2.5 是分界：真·带状屏都在 3 以上，平板/常规窗口都在 2 以下，中间没有实际设备。
+// 尺寸读不到时兜底 wide —— 保持副屏原行为，绝不把主用设备切成另一套布局。
+export function pickCanvas(winW, winH) {
+  const r = Number(winW) / Number(winH);
+  return Number.isFinite(r) && r < 2.5
+    ? { mode: 'tall', baseW: 1440, baseH: 1080 }
+    : { mode: 'wide', baseW: 1920, baseH: 480 };
+}
+
 // 美化 model 显示：statusline 送的 display_name（"Opus 4.7 (1M context)"）原样透传；
 // transcript 兜底出来的 raw ID（"claude-opus-4-7"、"claude-haiku-4-5-20251001"）
 // 解析成「Family M.m」。空值→null；claude- 前缀但结构不识别时原样返回避免吞值。

@@ -4,7 +4,7 @@ import {
   esc, statusText, clock, toolColor, barWidth, countdown, taskProgress, duration,
   effortLabel, effortClass,
   workflowChipText, workflowClass, workflowPct, workflowPhaseText,
-  fitScale, modelDisplay,
+  fitScale, modelDisplay, pickCanvas,
 } from '../public/format.js';
 
 test('esc 转义 HTML 特殊字符', () => {
@@ -162,4 +162,22 @@ test('modelDisplay 空/未知输入安全回退', () => {
   assert.equal(modelDisplay(undefined), null);
   // 无法解析的 claude- 前缀原样返回，避免吞掉真实值
   assert.equal(modelDisplay('claude-experimental'), 'claude-experimental');
+});
+
+test('pickCanvas 按宽高比选画布：带状副屏 vs 4:3 平板', () => {
+  // TURZX 副屏 1920×480（4:1）与主屏宽窗口走带状画布
+  assert.deepEqual(pickCanvas(1920, 480), { mode: 'wide', baseW: 1920, baseH: 480 });
+  assert.equal(pickCanvas(1600, 600).mode, 'wide');
+  // iPad 横屏 1024×768（4:3）走竖排画布，正好铺满、无黑边
+  assert.deepEqual(pickCanvas(1024, 768), { mode: 'tall', baseW: 1440, baseH: 1080 });
+  // 竖屏、带 Safari 工具栏的非标准比例同样走竖排
+  assert.equal(pickCanvas(768, 1024).mode, 'tall');
+  assert.equal(pickCanvas(1024, 700).mode, 'tall');
+});
+
+test('pickCanvas 异常尺寸兜底为带状画布', () => {
+  // 读不到窗口尺寸时保持原副屏行为，绝不把主用设备切成另一套布局
+  assert.equal(pickCanvas(0, 0).mode, 'wide');
+  assert.equal(pickCanvas(NaN, 480).mode, 'wide');
+  assert.equal(pickCanvas(undefined, undefined).mode, 'wide');
 });

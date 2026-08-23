@@ -122,6 +122,20 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
 .col-usage{width:27%}
 .alert{display:none}
 
+/* —— 平板 4:3 竖排画布（body.tall，由 format.pickCanvas 按屏幕宽高比自动切换）——
+   同一套 DOM 与 render 输出，只改画布尺寸与三列方向：三列上下堆叠，时间线吃剩余高度，
+   中列三块与额度两块各自横排省高度。1440×1080 在 iPad 横屏（1024×768）正好铺满、无黑边。 */
+body.tall .hud{width:1440px;height:1080px}
+body.tall .cols{flex-direction:column}
+body.tall .col-tl,body.tall .col-mid,body.tall .col-usage{width:auto}
+body.tall .col-tl{flex:1;min-height:0}
+body.tall .col-mid{flex:none;flex-direction:row;gap:26px}
+body.tall .col-mid>div{flex:1;min-width:0}
+body.tall .col-usage{flex:none;display:grid;grid-template-columns:1fr 1fr;column-gap:26px}
+body.tall .col-usage>.lbl,body.tall .col-usage>.rs{grid-column:1/-1}
+body.tall .col-usage>.gz{margin-top:9px}
+body.tall .col-usage>.rs{margin-top:9px}
+
 /* —— waiting 强提醒态：仅 WAITING 字样闪烁 + 红边角/状态点，不动背景 —— */
 @keyframes pulse-r{0%,100%{box-shadow:0 0 7px 2px rgba(255,45,110,.5)}50%{box-shadow:0 0 20px 8px rgba(255,45,110,.95)}}
 

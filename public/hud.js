@@ -4,7 +4,7 @@ import {
   renderToolCounts, renderChanges, renderUsage, renderFooter,
 } from './render.js';
 import { dict, pickLang } from './i18n.js';
-import { fitScale } from './format.js';
+import { fitScale, pickCanvas } from './format.js';
 
 const $ = (id) => document.getElementById(id);
 const lang = pickLang(location.search);   // URL ?lang=en 选语言，缺省 zh
@@ -15,9 +15,14 @@ let snapshot = { focusId: null, sessions: [], usage: null, ts: 0 };
 document.documentElement.lang = lang;
 $('tl-header').textContent = dict(lang).timelineHeader;
 
-// 等比缩放：把固定 1920×480 画布缩放铺进实际副屏窗口（取宽/高较小比、保宽高比，见 format.fitScale）。
+// 等比缩放：把设计稿画布缩放铺进实际窗口（取宽/高较小比、保宽高比，见 format.fitScale）。
+// 画布按屏幕宽高比二选一（见 format.pickCanvas）：带状副屏 1920×480，平板 4:3 走 1440×1080
+// 竖排稿——body.tall 只切 CSS（三列改上下堆叠），DOM 与 render 输出完全不变。
 function fitHud() {
-  document.documentElement.style.setProperty('--hud-scale', fitScale(window.innerWidth, window.innerHeight));
+  const { mode, baseW, baseH } = pickCanvas(window.innerWidth, window.innerHeight);
+  document.body.classList.toggle('tall', mode === 'tall');
+  document.documentElement.style.setProperty(
+    '--hud-scale', fitScale(window.innerWidth, window.innerHeight, baseW, baseH));
 }
 window.addEventListener('resize', fitHud);
 fitHud();
