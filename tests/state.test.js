@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSession, applyEvent, applyStatusline, formatTool } from '../src/state.js';
+import { createSession, applyEvent, applyStatusline, formatTool, estimateLines } from '../src/state.js';
 
 test('createSession 给出空闲初始记录', () => {
   const s = createSession('abc');
@@ -204,4 +204,46 @@ test('hook 的 effort 缺 level 时清空；整个 effort 键缺席则保持原�
   let s = { ...createSession('abc'), effort: 'high' };
   assert.equal(applyEvent(s, { hook_event_name: 'Stop' }, 1).effort, 'high');
   assert.equal(applyEvent(s, { hook_event_name: 'Stop', effort: {} }, 1).effort, null);
+});
+
+test('estimateLines 按工具入参估增删行数', () => {
+  // Edit：整块替换 → 新块记增、旧块记删
+  assert.deepEqual(estimateLines('Edit', { old_string: 'a\nb', new_string: 'x\ny\nz' }),
+    { added: 3, removed: 2 });
+  // Write：新内容整份记增，旧内容不可知、删记 0
+  assert.deepEqual(estimateLines('Write', { content: 'l1\nl2\nl3' }), { added: 3, removed: 0 });
+  // MultiEdit：各段累加
+  assert.deepEqual(estimateLines('MultiEdit', { edits: [
+    { old_string: 'a', new_string: 'b\nc' }, { old_string: 'd\ne', new_string: 'f' },
+  ] }), { added: 3, removed: 3 });
+  // 只读工具与缺参一律 0
+  assert.deepEqual(estimateLines('Read', { file_path: 'a.js' }), { added: 0, removed: 0 });
+  assert.deepEqual(estimateLines('Edit', {}), { added: 0, removed: 0 });
+});
+
+test('无 statusline 时（Desktop）从 hook 派生行数与会话时长', () => {
+  let s = createSession('abc');
+  s = applyEvent(s, { hook_event_name: 'UserPromptSubmit' }, 1_000);
+  s = applyEvent(s, { hook_event_name: 'PostToolUse', tool_name: 'Edit',
+    tool_input: { file_path: 'a.js', old_string: 'a', new_string: 'x\ny' } }, 31_000);
+  assert.equal(s.linesAdded, 2);
+  assert.equal(s.linesRemoved, 1);
+  assert.equal(s.durationMs, 30_000);          // 首个事件 → 最新事件的墙钟
+  // 再来一刀，累加而非覆盖
+  s = applyEvent(s, { hook_event_name: 'PostToolUse', tool_name: 'Write',
+    tool_input: { file_path: 'b.js', content: 'p\nq\nr' } }, 61_000);
+  assert.equal(s.linesAdded, 5);
+  assert.equal(s.durationMs, 60_000);
+});
+
+test('statusline 供过数（CLI）时不再自行派生，以 statusline 为准', () => {
+  let s = createSession('abc');
+  s = applyEvent(s, { hook_event_name: 'UserPromptSubmit' }, 1_000);
+  s = applyStatusline(s, { cost: { total_lines_added: 40, total_lines_removed: 7,
+    total_duration_ms: 123_000 } }, 2_000);
+  s = applyEvent(s, { hook_event_name: 'PostToolUse', tool_name: 'Edit',
+    tool_input: { file_path: 'a.js', old_string: 'a', new_string: 'x\ny' } }, 99_000);
+  assert.equal(s.linesAdded, 40);
+  assert.equal(s.linesRemoved, 7);
+  assert.equal(s.durationMs, 123_000);
 });

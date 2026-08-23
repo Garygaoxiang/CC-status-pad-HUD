@@ -14,7 +14,7 @@ export function createSession(sessionId) {
     model: null, effort: null, ultra: false, plan: null, cwd: null, projectName: null, branch: null,
     timeline: [], tasks: [], toolCounts: {},
     contextPct: 0, linesAdded: 0, linesRemoved: 0, filesChanged: 0, filesChangedPaths: [],
-    costUsd: 0, durationMs: 0, lastSeen: 0,
+    costUsd: 0, durationMs: 0, lastSeen: 0, startedAt: 0, slSeen: false,
     transcriptPath: null,
     workflow: null,
   };
@@ -30,6 +30,28 @@ export function formatTool(name = 'Tool', input = {}) {
     case 'Task': return `Task · ${truncate(input.description, 36)}`;
     default: return name;
   }
+}
+
+// 按工具入参估算本次改动的增删行数。Desktop 版没有 statusline，这是唯一来源。
+// Edit/MultiEdit：把「整块替换」算成新块记增、旧块记删；Write：新内容整份记增，
+// 旧内容不可知故删记 0。只读工具与缺参一律 0。
+// ponytail: 估算值，与 Claude Code 自己的 diff 统计不完全一致（宁可少算不虚报）；
+//           要精确值只能靠 statusline —— 而那只有 CLI 才调。
+const lineCount = (t) => (t ? String(t).split('\n').length : 0);
+
+export function estimateLines(name, input = {}) {
+  const i = input || {};
+  if (name === 'Edit') {
+    return { added: lineCount(i.new_string), removed: lineCount(i.old_string) };
+  }
+  if (name === 'Write') return { added: lineCount(i.content), removed: 0 };
+  if (name === 'MultiEdit') {
+    return (Array.isArray(i.edits) ? i.edits : []).reduce((acc, e) => ({
+      added: acc.added + lineCount(e && e.new_string),
+      removed: acc.removed + lineCount(e && e.old_string),
+    }), { added: 0, removed: 0 });
+  }
+  return { added: 0, removed: 0 };
 }
 
 function applyTaskTool(tasks, name, input = {}, response = '') {
@@ -72,6 +94,7 @@ export function applyEvent(session, event, now = Date.now()) {
   if (event.cwd) { s.cwd = event.cwd; s.projectName = basename(event.cwd); }
   // Desktop 版不调 statusline，transcript_path 与 effort 只能从 hook 载荷取（CLI 也照送，无害）。
   // effort 沿用 statusline 语义：键在就以本次为准（缺 level 即清空），键缺席才保持原值。
+  if (!s.startedAt) s.startedAt = now;
   if (event.transcript_path) s.transcriptPath = event.transcript_path;
   if ('effort' in event) s.effort = event.effort?.level ?? null;
   switch (event.hook_event_name) {
@@ -96,6 +119,12 @@ export function applyEvent(session, event, now = Date.now()) {
           s.filesChangedPaths = [...session.filesChangedPaths, fp];
           s.filesChanged = s.filesChangedPaths.length;
         }
+        // statusline 供过数就以它为准（CLI）；没供过才自己估（Desktop）
+        if (!s.slSeen) {
+          const d = estimateLines(name, event.tool_input);
+          s.linesAdded += d.added;
+          s.linesRemoved += d.removed;
+        }
       }
       break;
     }
@@ -103,11 +132,14 @@ export function applyEvent(session, event, now = Date.now()) {
     case 'Stop': s.status = 'idle'; s.currentTool = null; break;
     case 'SessionEnd': s.status = 'ended'; break;
   }
+  // 会话时长：statusline 没供过就用「首个事件 → 本次事件」的墙钟兜底（Desktop）
+  if (!s.slSeen) s.durationMs = now - s.startedAt;
   return s;
 }
 
 export function applyStatusline(session, sl, now = Date.now()) {
-  const s = { ...session, lastSeen: now };
+  // slSeen：本会话有 statusline 供数（= CLI）。置位后 applyEvent 不再自行估行数/时长。
+  const s = { ...session, lastSeen: now, slSeen: true };
   if (sl.model?.display_name) s.model = sl.model.display_name;
   // effort 与其他字段不同：反映当次真实值。statusline 是完整快照，
   // effort 缺省即"当前模型不支持/未设"，必须能从有清回无，否则切模型后残留旧档。
