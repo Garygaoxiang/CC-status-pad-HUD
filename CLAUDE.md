@@ -82,7 +82,8 @@ Node 测试**共用同一份代码**，可在 Node 里直接 TDD。`hud.js` / `h
   PATH/盘符未就绪。解决「采集器一次没起来/退出就永久缺席、kiosk 空窗无限重连」的根因。
 - `install.ps1` — 安装器：备份用户 `~/.claude/settings.json`（settings.json 存在时整份
   备份、时间戳命名，不存在则按空配置处理、跳过备份），用 `mergeSettings` 写入
-  HUD hook 与 statusline；把启动器注册到 Windows 启动文件夹（`shell:startup`，无需管理员权限）。
+  HUD hook 与 statusline；把**看门狗**注册到 Windows 启动文件夹（`shell:startup`，无需管理员权限）——
+  开机只保活采集器、不自动开 kiosk 窗口（显示端可能是 iPad/平板走局域网），要铺 TURZX 副屏手动跑 `start-hud.ps1`。
 - `uninstall.ps1` — 卸载器：用 `restoreSettings` 还原 settings.json；移除启动文件夹里的启动项。
 - `hud-config.json` — 静态配置（端口、目标分辨率、浏览器偏好）。
 

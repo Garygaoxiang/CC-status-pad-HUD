@@ -34,11 +34,13 @@ if ($result.savedStatusline) {
 $json = $result.nextSettings | ConvertTo-Json -Depth 12
 [System.IO.File]::WriteAllText($settingsPath, $json, $utf8)
 
-# 5) 注册开机自启：启动文件夹放一个隐藏窗口启动器 .cmd。
+# 5) 注册开机自启：启动文件夹放一个隐藏窗口启动器 .cmd，只拉看门狗（= 只保活采集器）。
+#    不开 kiosk 窗口：HUD 显示端可能是 iPad/平板走局域网，开机在主屏弹窗纯属打扰；
+#    要铺 TURZX 副屏时手动跑 scripts\start-hud.ps1（它自己也会先保证看门狗在跑）。
 $autostart = Join-Path ([Environment]::GetFolderPath('Startup')) 'turzx-hud.cmd'
 $line = "@echo off`r`npowershell -NoProfile -WindowStyle Hidden " +
-        "-ExecutionPolicy Bypass -File `"$root\scripts\start-hud.ps1`""
+        "-ExecutionPolicy Bypass -File `"$root\scripts\hud-watchdog.ps1`""
 [System.IO.File]::WriteAllText($autostart, $line, $utf8)
 
 Write-Host "HUD 已安装。  备份: settings.backup-$stamp.json   自启: $autostart"
-Write-Host "重启 Claude Code 使 hook/statusline 生效；或运行 scripts\start-hud.ps1 立即启动 HUD。"
+Write-Host "重启 Claude Code 使 hook/statusline 生效；开机自启只保活采集器，要铺 TURZX 副屏请手动跑 scripts\start-hud.ps1。"
