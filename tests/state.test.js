@@ -189,3 +189,19 @@ test('filesChanged 无 file_path 时不崩且不计数', () => {
     tool_input: {} }, 1);
   assert.equal(s.filesChanged, 0);
 });
+
+test('hook 带 transcript_path/effort → 写入会话（Desktop 无 statusline 时的唯一来源）', () => {
+  let s = createSession('abc');
+  s = applyEvent(s, {
+    hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' },
+    transcript_path: 'C:/u/.claude/projects/p/abc.jsonl', effort: { level: 'max' },
+  }, 1000);
+  assert.equal(s.transcriptPath, 'C:/u/.claude/projects/p/abc.jsonl');
+  assert.equal(s.effort, 'max');
+});
+
+test('hook 的 effort 缺 level 时清空；整个 effort 键缺席则保持原值', () => {
+  let s = { ...createSession('abc'), effort: 'high' };
+  assert.equal(applyEvent(s, { hook_event_name: 'Stop' }, 1).effort, 'high');
+  assert.equal(applyEvent(s, { hook_event_name: 'Stop', effort: {} }, 1).effort, null);
+});

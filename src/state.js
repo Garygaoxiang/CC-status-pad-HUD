@@ -70,6 +70,10 @@ export function applyEvent(session, event, now = Date.now()) {
     lastSeen: now,
   };
   if (event.cwd) { s.cwd = event.cwd; s.projectName = basename(event.cwd); }
+  // Desktop 版不调 statusline，transcript_path 与 effort 只能从 hook 载荷取（CLI 也照送，无害）。
+  // effort 沿用 statusline 语义：键在就以本次为准（缺 level 即清空），键缺席才保持原值。
+  if (event.transcript_path) s.transcriptPath = event.transcript_path;
+  if ('effort' in event) s.effort = event.effort?.level ?? null;
   switch (event.hook_event_name) {
     case 'UserPromptSubmit': // 用户 prompt 不是工具调用，不写入时间线
       s.status = 'working'; s.currentTool = null; break;
