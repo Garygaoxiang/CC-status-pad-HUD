@@ -109,3 +109,13 @@ test('pollTranscripts 从 transcript 派生 contextPct', async () => {
   await c.stop();
   await rm(dir, { recursive: true, force: true });
 });
+
+test('静态资源带 no-store：iOS 主屏 Web App 不会拿旧页面', async () => {
+  const c = createCollector();
+  const port = await listen(c);
+  const res = await fetch(`http://localhost:${port}/`);
+  await res.text();                          // 必须消费 body，否则连接不释放、server.close 挂住
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('cache-control'), 'no-store');
+  await c.stop();
+});

@@ -98,7 +98,12 @@ export function createCollector() {
       if (!filePath.startsWith(PUBLIC_DIR)) return res.writeHead(403).end();
       try {
         const buf = await readFile(filePath);
-        res.writeHead(200, { 'Content-Type': MIME[extname(filePath)] || 'application/octet-stream' });
+        // no-store：iOS 主屏 Web App / 手机浏览器会缓存 HUD 页面，改版后拿旧文件
+        //（曾表现为 iPad 上尺寸不对 + 右半屏内容缺失）。局域网直读本地磁盘，不缓存零成本。
+        res.writeHead(200, {
+          'Content-Type': MIME[extname(filePath)] || 'application/octet-stream',
+          'Cache-Control': 'no-store',
+        });
         return res.end(buf);
       } catch {
         return res.writeHead(404).end();
