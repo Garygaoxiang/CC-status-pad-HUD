@@ -2,7 +2,16 @@
 <html lang="zh">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=1920, initial-scale=1">
+  <!-- device-width：手机/平板浏览器认这个 meta，写死 1920 会让布局视口变 1920、
+       页面按 1:1 显示只露左边一截（body overflow:hidden 连滚都滚不动）。
+       给 device-width 后 innerWidth 才是真实屏宽，fitScale 才能把画布整块缩放铺进去。
+       桌面浏览器（副屏 kiosk）本来就忽略此 meta，改动对副屏零影响。 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- iOS「添加到主屏幕」后全屏运行、隐藏 Safari 工具栏；状态栏黑色融进 HUD 深底。
+       非 iOS 浏览器忽略这两行。注：局域网走 http 非安全上下文，Wake Lock 用不了，
+       iPad 需在「设置 → 显示与亮度 → 自动锁定」选“永不”。 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <title>Claude Code HUD</title>
   <link rel="stylesheet" href="hud.css">
 </head>
