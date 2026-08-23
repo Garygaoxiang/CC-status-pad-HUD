@@ -142,6 +142,19 @@ Node.js ESM 模块。导出纯函数 `pickScreen`（从屏幕列表挑最优副�
   时按 family 映射——`claude-opus-4-*` → 1M，其余保持 200K 默认）取整百分比。
   会话无 `transcriptPath` 或读不到时保持前值（初始 0）。
 
+## Claude Desktop 上的差异（与 CLI 共用同一套 hook）
+
+Desktop 版读同一份 `~/.claude/settings.json`，hook 照常触发，装一次两边都用，无需分别安装。
+实测 Desktop 的 hook 载荷带 `session_id / cwd / transcript_path / effort / permission_mode`，
+比早期以为的全（早年为 Desktop 写的 `deriveTranscriptPath` 反推因此退化成纯兜底）。
+真正的差异只有两处，都是**能力缺失、不是故障**：
+
+- **Desktop 不调 statusline** → `costUsd` / `durationMs` / `linesAdded` / `linesRemoved` 恒为 0，
+  无替代数据源。`model` / `effort` / `contextPct` / `transcriptPath` 已由 transcript 轮询与
+  hook 载荷分别兜底，不受影响。
+- **Desktop 不写 `~/.claude/.credentials.json`** → `usage`（5h/7d 配额）为 `null`，HUD 配额区留空。
+  想要配额：在终端跑一次 CLI 版 `claude` 登录，凭据文件生成后 usage 轮询器自会取到。
+
 ## 约定
 
 - 所有代码注释用中文，遵循现有风格。

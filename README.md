@@ -125,7 +125,9 @@ Don't want to buy a screen? **Any old Android / iOS tablet or phone** on the sam
    ```
    This marks your home network "Private" and only opens 4317 there, so it stays closed on public networks. To remove later: `Remove-NetFirewallRule -DisplayName "TURZX HUD 4317"`.
 3. **Connect the device to the same WiFi** (same router as the PC) and open `http://<PC-IP>:4317/?lang=en` (drop `?lang=en` for Chinese).
-4. **Fullscreen + stay awake**: use the browser's "Add to Home Screen" or fullscreen mode; the HUD has a built-in **Wake Lock** to keep the screen on automatically—no need to change system sleep settings (modern browser required).
+4. **Fullscreen + stay awake**: use "Add to Home Screen" for a toolbar-free fullscreen app (iOS `apple-mobile-web-app-capable` is set).
+   **Note**: LAN access is plain http, which is not a secure context, so the browser Wake Lock API is unavailable (it only works on localhost/https).
+   Disable auto-lock on the device instead: iOS "Settings → Display & Brightness → Auto-Lock → Never"; Android "Display → Sleep → longest/never".
 
 **Supported devices**:
 
